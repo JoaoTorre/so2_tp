@@ -1,2 +1,8 @@
 ﻿  main.c
-  arbitro.vcxproj -> C:\Users\nunom\source\repos\so2_tp\arbitro\x64\Debug\arbitro.exe
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(65,11): warning C4101: 'nomeFicheiro': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(148,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(159,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(170,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(113,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(20,1): warning C4715: 'AdicionarJogador': nem todos os caminhos de controle retornam um valor
+  arbitro.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe

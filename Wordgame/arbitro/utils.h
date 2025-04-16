@@ -10,6 +10,15 @@
 #include <strsafe.h>
 #include <synchapi.h>
 
+// CONSTANTES MEMORIA PARTILHADA
+#define MEMORIA_PARTILHADA_NOME _T("Global\FileMapping")
+#define MEMORIA_PARTILHADA_EVENTO _T("Global\FileMapingEvent")
+#define MEMORIA_PARTILHADA_MUTEX _T("Global\FileMapingMutex")
+
+
+// CONSTANTES PIPES
+#define NAMEDPIPE_JOGADORES _T("\\\\.\\pipe\\mynamedpipe")
+
 
 // caminho das keys
 #define KEY_PATH _T("SOFTWARE\\TrabSO2")
@@ -22,13 +31,17 @@
 // CONSTANTES DEFAULT
 #define MAX 256
 #define BUFSIZE 512
-#define DEFAULT_MAX_CLIENTES 20
+#define DEFAULT_MAX_JOGADORES 20
 #define DEFAULT_RITMO 3
 #define DEFAULT_MAX_LETRAS 6
 #define MAX_LETRAS 12
+
 
 // CONSTANTES NOMES SEMAFOROS
 #define SEMAPHORE_UNIQUE_ARBITRO_NAME _T("SEMAPHORE_UNIQUE_ARBITRO")
 
 
+TCHAR* toUpperString(TCHAR* string);
+TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size);
+BOOL getValueFromKeyNLETRAS(unsigned int* nLetras);
 #endif UTILS_H
