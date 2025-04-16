@@ -3,6 +3,7 @@
 
 
 int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
+
     for (int i = 0; i < threadData->nJogadores; i++) {
         if (_tcscmp(threadData->jogadores[i].username, novoJogador.username) == 0) {
             return -1;
