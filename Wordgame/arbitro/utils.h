@@ -33,8 +33,8 @@
 #define BUFSIZE 512
 #define DEFAULT_MAX_JOGADORES 20
 #define DEFAULT_RITMO 3
-#define DEFAULT_MAX_LETRAS 6
-#define MAX_LETRAS 12
+#define DEFAULT_MAXLETRAS 6
+#define MAXIMO_LETRAS 12
 
 
 // CONSTANTES NOMES SEMAFOROS
@@ -43,5 +43,8 @@
 
 TCHAR* toUpperString(TCHAR* string);
 TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size);
-BOOL getValueFromKeyNLETRAS(unsigned int* nLetras);
+BOOL getValueFromKeyMAXLETRAS(unsigned int* maxLetras);
+BOOL getValueFromKeyRITMO(unsigned int* nRitmo);
+BOOL setValueToKeyRITMO(unsigned int nRitmo);
+BOOL setValueToKeyMAXLETRAS(unsigned int maxLetras);
 #endif UTILS_H

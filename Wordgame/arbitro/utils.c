@@ -45,33 +45,97 @@ TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size) {
 
 // verifica dados do login
 int verificaLogin(Jogador jogador) {
-
 	return 0;
 }
 
 
-BOOL getValueFromKeyNLETRAS(unsigned int* nLetras) {
+BOOL getValueFromKeyMAXLETRAS(unsigned int* maxLetras) {
 	LSTATUS res;
 	HKEY chave;
 	DWORD tamanhoValor;
 
-	// Abrir a chave
 	res = RegOpenKeyEx(HKEY_CURRENT_USER, KEY_PATH, 0, KEY_READ, &chave);
 	if (res != ERROR_SUCCESS) {
-		_tprintf_s(_T("Erro ao abrir a chave de registro: %d\n"), res);
-		*nLetras = 0;
+		_ftprintf(stderr, _T("[ERRO] - Ao abrir a chave de registro: %d\n"), res);
+		*maxLetras = 0;
 		return FALSE;
 	}
 
-	// Obter o valor
-	res = RegQueryValueEx(chave, KEY_MAXLETRAS, NULL, NULL, (LPBYTE)nLetras, &tamanhoValor);
+	res = RegQueryValueEx(chave, KEY_MAXLETRAS, NULL, NULL, (LPBYTE)maxLetras, &tamanhoValor);
 
 	if (res != ERROR_SUCCESS) {
-		_tprintf_s(_T("Erro ao abrir a chave de registro: %d\n"), res);
-		*nLetras = 0;
+		_ftprintf(stderr, _T("[ERRO] - Ao aceder valor: %d\n"), res);
+		*maxLetras = 0;
+		RegCloseKey(chave);
 		return FALSE;
 	}
 
-	RegCloseKey(chave); // fechar a chave
+	RegCloseKey(chave); 
+	return TRUE;
+}
+
+BOOL getValueFromKeyRITMO(unsigned int* nRitmo) {
+	LSTATUS res;
+	HKEY chave;
+	DWORD tamanhoValor;
+
+	res = RegOpenKeyEx(HKEY_CURRENT_USER, KEY_PATH, 0, KEY_READ, &chave);
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao abrir a chave de registro: %d\n"), res);
+		*nRitmo = 0;
+		return FALSE;
+	}
+
+	res = RegQueryValueEx(chave, KEY_RITMO, NULL, NULL, (LPBYTE)nRitmo, &tamanhoValor);
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao aceder valor: %d\n"), res);
+		*nRitmo = 0;
+		RegCloseKey(chave);
+		return FALSE;
+	}
+
+	RegCloseKey(chave); 
+	return TRUE;
+}
+
+BOOL setValueToKeyRITMO(unsigned int nRitmo){
+	LSTATUS res;
+	HKEY chave;
+
+	res = RegCreateKeyEx(HKEY_CURRENT_USER, KEY_PATH, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &chave, NULL);
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao abrir a chave de registro: %d\n"), res);
+		return FALSE;
+	}
+
+	res = RegSetValueEx(chave, KEY_RITMO, 0, REG_DWORD, (const BYTE*)&nRitmo, sizeof(nRitmo));
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao guardar valor: %d\n"), res);
+		RegCloseKey(chave);
+		return FALSE;
+	}
+
+	RegCloseKey(chave);
+	return TRUE;
+}
+
+BOOL setValueToKeyMAXLETRAS(unsigned int maxLetras){
+	LSTATUS res;
+	HKEY chave;
+	
+	res = RegCreateKeyEx(HKEY_CURRENT_USER, KEY_PATH, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE, NULL, &chave, NULL);
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao abrir a chave de registro: %d\n"), res);
+		return FALSE;
+	}
+	
+	res = RegSetValueEx(chave, KEY_MAXLETRAS, 0, REG_DWORD, (const BYTE*)&maxLetras, sizeof(maxLetras));
+	if (res != ERROR_SUCCESS) {
+		_ftprintf(stderr, _T("[ERRO] - Ao guardar valor: %d\n"), res);
+		RegCloseKey(chave);
+		return FALSE;
+	}
+
+	RegCloseKey(chave);
 	return TRUE;
 }

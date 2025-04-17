@@ -1,7 +1,5 @@
-
 #ifndef STRUCTS_H
 #define STRUCTS_H
-
 
 #include <windows.h>
 #include <tchar.h>
@@ -14,32 +12,25 @@ typedef struct {
 	HANDLE hMapFile;
 }MEMDATA;
 
-
 typedef struct {
 	HANDLE hInstancia;
 	OVERLAPPED overlap;
 	BOOL activo;
 }DadosPipe;
 
-
-
 typedef struct {
 	char letras_visiveis[MAX_VISIBLE_LETRAS];                   
 } SHAREDMEM_LETRAS;
-
-
 
 typedef struct {
 	TCHAR comando[256];
 	int tipo_comando;
 }Comandos_Jogador;
 
-
 typedef struct {
 	TCHAR username[MAX];
-	int pontuacao;
+	float pontuacao;
 }Jogador;
-
 
 typedef struct {
 	DadosPipe* hPipes;
@@ -52,10 +43,8 @@ typedef struct {
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
 }ThreadDados;
 
-
 typedef struct {
 	int max_letras;
 	int ritmo;
 } ConfigJogo;
-
 #endif

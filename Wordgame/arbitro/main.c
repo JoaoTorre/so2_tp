@@ -115,6 +115,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     int numJogadores = 0;
     DWORD offset, nBytes;
     int i;
+    int maxLetras, nRitmo; // alterar para estrutura
 
 #ifdef UNICODE 
 	_setmode(_fileno(stdin), _O_WTEXT);
@@ -131,9 +132,32 @@ int _tmain(int argc, TCHAR* argv[]) {
 
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		_ftprintf(stderr, _T("[ERRO] - Já existe um Árbitro a decorrer"));
+        return -1;
 	}
 
+    /*---- VALORES REGISTRY ----*/
+    if (!getValueFromKeyMAXLETRAS(&maxLetras)) {
+        _ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de MAXLETRAS"));
+		maxLetras = DEFAULT_MAXLETRAS;
+        // guardar numa key o valor default
+		setValueToKeyMAXLETRAS(DEFAULT_MAXLETRAS);
+    }
+    else if (maxLetras > MAXIMO_LETRAS) {
+		_ftprintf(stderr, _T("[ERRO] - O valor de MAXLETRAS não pode ser superior a %d"), MAXIMO_LETRAS);
+		maxLetras = MAXIMO_LETRAS;
+		setValueToKeyMAXLETRAS(MAXIMO_LETRAS);
+    }
 
+    if (!getValueFromKeyRITMO(&nRitmo)) {
+		_ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de RITMO"));
+		nRitmo = DEFAULT_RITMO;
+		setValueToKeyRITMO(DEFAULT_RITMO);
+    }else if(nRitmo < 1){
+		_ftprintf(stderr, _T("[ERRO] - O valor de RITMO não pode ser inferior a 1"));
+		nRitmo = DEFAULT_RITMO;
+		setValueToKeyRITMO(DEFAULT_RITMO);
+	}
+	
     /*----MEMÓRIA COMPARTILHADA----*/
 
     // Iniciar arquivo de memória compartilhada
@@ -266,6 +290,7 @@ int _tmain(int argc, TCHAR* argv[]) {
          return -1;
      }
      _tprintf(TEXT("[ARBITRO] - Esperar ligacão de um Jogador/Bot...\n"));
+
      while (!dados->terminar && numJogadores < DEFAULT_MAX_JOGADORES) {
          offset = WaitForMultipleObjects(DEFAULT_MAX_JOGADORES, dados->hEvents, FALSE, INFINITE);
          i = offset - WAIT_OBJECT_0;
