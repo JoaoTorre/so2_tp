@@ -12,7 +12,6 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
     WaitForSingleObject(threadData->hMutex, INFINITE);
     if (threadData->nJogadores < DEFAULT_MAX_JOGADORES) {
         threadData->jogadores[threadData->JogadorIndex] = novoJogador;  
-        threadData->nJogadores++;  
     }
     ReleaseMutex(threadData->hMutex);
 }
@@ -27,35 +26,41 @@ void ImprimirJogadores(ThreadDados* threadData) {
 
 
 DWORD WINAPI threadTrataCliente(LPVOID param) {
-    ThreadDados* dados = (ThreadDados*)param;
+    ThreadParams* params = (ThreadParams*)param;
     BOOL ret, continua = TRUE;
     Comandos_Jogador comandos;
     Jogador jogador;
     DWORD n;
 
     do {
-        ret = ReadFile(dados->hPipes[dados->JogadorIndex].hInstancia, &comandos.tipo_comando, sizeof(comandos.tipo_comando), &n, NULL);
+        ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &comandos, sizeof(comandos), &n, NULL);
+        if (!ret) {
+            _tprintf(TEXT("[ERRO] - Falha ao ler do pipe. Código de erro: %d\n"), GetLastError());
+            continua = FALSE;
+            break;
+        }
 
         switch (comandos.tipo_comando) {
-            case 1:
-                //INICIO
-                ret = ReadFile(dados->hPipes[dados->JogadorIndex].hInstancia, &jogador, sizeof(jogador), &n, NULL);
+        case 1:
+            //INICIO
+            ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &jogador, sizeof(jogador), &n, NULL);
 
-                if (ret != FALSE) {
-                    _tprintf(TEXT("[ARBITRO] - Recebi %d bytes de dados de login do cliente.\n"), n);
-                    _tprintf(TEXT("[ARBITRO] - Username: %s\n"), jogador.username);
-                    jogador.pontuacao = 0;
-                    if (AdicionarJogador(dados, jogador) == -1) {
-                        _tprintf(TEXT("[ARBITRO] - Jogador já existe com este nome: %s\n"), jogador.username);
-                   }
-                }
-           break;
+            if (ret != FALSE) {
+                _tprintf(TEXT("[ARBITRO] - Recebi %d bytes de dados de login do cliente.\n"), n);
+                _tprintf(TEXT("[ARBITRO] - Username: %s\n"), jogador.username);
+                jogador.pontuacao = 0;
+                params->dados->JogadorIndex = params->jogadorIndex;
+
+                if (AdicionarJogador(params->dados,jogador) == -1) {
+                    _tprintf(TEXT("[ARBITRO] - Jogador já existe com este nome: %s\n"), jogador.username);
+               }
+            }
+            break;
 
         }
-    }while (continua);
+    } while (continua);
     return 0;
 }
-
 
 DWORD WINAPI threadInterface(LPVOID param) {
     ThreadDados* dados = (ThreadDados*)param;
@@ -107,22 +112,22 @@ DWORD WINAPI threadInterface(LPVOID param) {
 
 
 int _tmain(int argc, TCHAR* argv[]) {
-
     HANDLE hSemaphoreArbitro, hSemaphoreMaxClientes, hEventTemp, hPipe, hThreadInterface;
     HANDLE* hThreads;
-    ThreadDados *dados;
+    ThreadDados dados;
     MEMDATA memdata;
-    int numJogadores = 0;
     DWORD offset, nBytes;
     int i;
     int maxLetras, nRitmo; // alterar para estrutura
+    dados.nJogadores = 0;
 
 #ifdef UNICODE 
 	_setmode(_fileno(stdin), _O_WTEXT);
 	_setmode(_fileno(stdout), _O_WTEXT);
 	_setmode(_fileno(stderr), _O_WTEXT);
 #endif
-	
+   
+
 	hSemaphoreArbitro = CreateSemaphore(NULL, 1, 1, SEMAPHORE_UNIQUE_ARBITRO_NAME);
 
 	if (hSemaphoreArbitro == NULL) {
@@ -200,20 +205,20 @@ int _tmain(int argc, TCHAR* argv[]) {
      }
 
      /*        PIPES           */
-     dados = (ThreadDados*)malloc(sizeof(ThreadDados));
-     dados->hPipes = malloc(DEFAULT_MAX_JOGADORES * sizeof(DadosPipe)); // Aloca memória para os arrays hPipes
-     dados->hEvents = malloc(DEFAULT_MAX_JOGADORES * sizeof(HANDLE)); // Aloca memória para os arrays hEvents
+
+     dados.hPipes = malloc(DEFAULT_MAX_JOGADORES * sizeof(DadosPipe)); // Aloca memória para os arrays hPipes
+     dados.hEvents = malloc(DEFAULT_MAX_JOGADORES * sizeof(HANDLE)); // Aloca memória para os arrays hEvents
      hThreads = malloc(DEFAULT_MAX_JOGADORES * sizeof(HANDLE)); // Aloca memória para os arrays hThreads
-     dados->JogadorIndex = 0; //Índice de Cliente no Array hPipes
-     dados->terminar = 0; //Flag como sinal de  terminar
-     dados->nJogadores = 0;
+     dados.JogadorIndex = 0; //Índice de Cliente no Array hPipes
+     dados.terminar = 0; //Flag como sinal de  terminar
+   
 
 
      /*           Criação de Mutex              */
 
-     dados->hMutex = CreateMutex(NULL, FALSE, NULL);
+     dados.hMutex = CreateMutex(NULL, FALSE, NULL);
 
-     if (dados->hMutex == NULL) {
+     if (dados.hMutex == NULL) {
          _tprintf(TEXT("[ERRO] - Criar Mutex! (CreateMutex)\n"));
          CloseHandle(hSemaphoreArbitro);
          CloseHandle(memdata.hMapFile);
@@ -224,7 +229,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 
      /*           Criação de Evento              */
 
-     //dados.nJogadores = DEFAULT_MAX_JOGADORES;
+     
 
      for (int i = 0; i < DEFAULT_MAX_JOGADORES; i++) {
          hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -235,7 +240,7 @@ int _tmain(int argc, TCHAR* argv[]) {
              CloseHandle(memdata.hMapFile);
              CloseHandle(memdata.hEvent);
              CloseHandle(memdata.hMutex);
-             CloseHandle(dados->hMutex);
+             CloseHandle(dados.hMutex);
              exit(-1);
          }
 
@@ -252,33 +257,32 @@ int _tmain(int argc, TCHAR* argv[]) {
              CloseHandle(memdata.hMapFile);
              CloseHandle(memdata.hEvent);
              CloseHandle(memdata.hMutex);
-             CloseHandle(dados->hMutex);
+             CloseHandle(dados.hMutex);
              CloseHandle(hEventTemp);
              exit(-1);
          }
 
 
-         ZeroMemory(&dados->hPipes[i].overlap, sizeof(dados->hPipes[i].overlap));
-         dados->hPipes[i].hInstancia = hPipe;
-         dados->hPipes[i].overlap.hEvent = hEventTemp;
-         dados->hEvents[i] = hEventTemp;
-         dados->hPipes[i].activo = FALSE;
+         ZeroMemory(&dados.hPipes[i].overlap, sizeof(dados.hPipes[i].overlap));
+         dados.hPipes[i].hInstancia = hPipe;
+         dados.hPipes[i].overlap.hEvent = hEventTemp;
+         dados.hEvents[i] = hEventTemp;
+         dados.hPipes[i].activo = FALSE;
 
-         if (ConnectNamedPipe(hPipe, &dados->hPipes[i].overlap)) {
+         if (ConnectNamedPipe(hPipe, &dados.hPipes[i].overlap)) {
              _tprintf(TEXT("[ERRO] Ligar ao Jogador! (ConnectNamedPipe)\n"));
              CloseHandle(hSemaphoreArbitro);
              CloseHandle(memdata.hMapFile);
              CloseHandle(memdata.hEvent);
              CloseHandle(memdata.hMutex);
-             CloseHandle(dados->hMutex);
+             CloseHandle(dados.hMutex);
              exit(-1);
          }
      }
 
     
-
      //criar thread interface
-     hThreadInterface = CreateThread(NULL, 0, threadInterface, dados, 0, NULL);
+     hThreadInterface = CreateThread(NULL, 0, threadInterface, &dados, 0, NULL);
 
      if (hThreadInterface == NULL) {
          _tprintf(TEXT("[ERRO] - Criar ThreadInterface! (CreateThread)\n"));
@@ -286,64 +290,65 @@ int _tmain(int argc, TCHAR* argv[]) {
          CloseHandle(memdata.hMapFile);
          CloseHandle(memdata.hEvent);
          CloseHandle(memdata.hMutex);
-         CloseHandle(dados->hMutex);
+         CloseHandle(dados.hMutex);
          return -1;
      }
      _tprintf(TEXT("[ARBITRO] - Esperar ligacão de um Jogador/Bot...\n"));
 
-     while (!dados->terminar && numJogadores < DEFAULT_MAX_JOGADORES) {
-         offset = WaitForMultipleObjects(DEFAULT_MAX_JOGADORES, dados->hEvents, FALSE, INFINITE);
+    
+
+     while (!dados.terminar && dados.nJogadores < DEFAULT_MAX_JOGADORES) {
+         _tprintf(TEXT("[BOLSA] - Esperar ligacão de um cliente...\n"));
+
+         offset = WaitForMultipleObjects(DEFAULT_MAX_JOGADORES, dados.hEvents, FALSE, INFINITE);
          i = offset - WAIT_OBJECT_0;
 
          if (i >= 0 && i < DEFAULT_MAX_JOGADORES) {
-             _tprintf(TEXT("[ARBITRO] - Jogador/Bot %d entrou...\n"), i);
+             _tprintf(TEXT("[BOLSA] - Cliente %d entrou...\n"), i);
+             if (GetOverlappedResult(dados.hPipes[i].hInstancia,
+                 &dados.hPipes[i].overlap, &nBytes, FALSE)) {
 
-             if (GetOverlappedResult(dados->hPipes[i].hInstancia,
-                 &dados->hPipes[i].overlap, &nBytes, FALSE)) {
+                 ResetEvent(dados.hEvents[i]);
+                 WaitForSingleObject(dados.hMutex, INFINITE);
+                 dados.hPipes[i].activo = TRUE;
+                 ReleaseMutex(dados.hMutex);
 
-                 ResetEvent(dados->hEvents[i]);
-                 WaitForSingleObject(dados->hMutex, INFINITE);
-                 dados->hPipes[i].activo = TRUE;
-                 ReleaseMutex(dados->hMutex);
-
-                
-                 WaitForSingleObject(dados->hMutex, INFINITE);
-                 dados->JogadorIndex = numJogadores;
-                 ReleaseMutex(dados->hMutex);
-                 
-                 numJogadores++;
+                 ThreadParams* params = malloc(sizeof(ThreadParams));
+                 params->jogadorIndex = i;
+                 params->dados = &dados; 
 
                  // Criar a thread
-                 hThreads[numJogadores] = CreateThread(NULL, 0, threadTrataCliente, dados,0, NULL);
-                 if (hThreads[numJogadores] == NULL) {
+                 hThreads[dados.nJogadores] = CreateThread(NULL, 0, threadTrataCliente, params, 0, NULL);
+                 if (hThreads[dados.nJogadores] == NULL) {
                      _tprintf(TEXT("[ERRO] - Criar Thread! (CreateThread)\n"));
+                     free(params);
                      exit(-1);
-                 }     
+                 }
+                 dados.nJogadores++;
              }
          }
      }
 
      WaitForSingleObject(hThreadInterface, INFINITE);
 
-     for (int j = 0; j <= numJogadores - 1; j++) {
+     for (int j = 0; j <= dados.nJogadores - 1; j++) {
          WaitForSingleObject(hThreads[j], 1000);
          CloseHandle(hThreads[j]);
      }
-
      
 
      _tprintf(TEXT("[BOLSA] - A Desligar pipes e handles\n"));
 
-     for (i = 0; i < dados->nJogadores; i++) {
-         if (!DisconnectNamedPipe(dados->hPipes[i].hInstancia)) {
+     for (i = 0; i < dados.nJogadores; i++) {
+         if (!DisconnectNamedPipe(dados.hPipes[i].hInstancia)) {
              _tprintf(TEXT("[ERRO] - Desligar o pipe! (DisconnectNamedPipe)\n"));
              exit(-1);
          }
-         CloseHandle(dados->hPipes[i].hInstancia);
+         CloseHandle(dados.hPipes[i].hInstancia);
      }
 
-     free(dados->hPipes);
-     free(dados->hEvents);
+     free(dados.hPipes);
+     free(dados.hEvents);
      free(hThreads);
 
      CloseHandle(hThreadInterface);

@@ -43,12 +43,6 @@ TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size) {
 }
 
 
-// verifica dados do login
-int verificaLogin(Jogador jogador) {
-	return 0;
-}
-
-
 BOOL getValueFromKeyMAXLETRAS(unsigned int* maxLetras) {
 	LSTATUS res;
 	HKEY chave;

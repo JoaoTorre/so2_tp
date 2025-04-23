@@ -44,6 +44,12 @@ typedef struct {
 }ThreadDados;
 
 typedef struct {
+	int jogadorIndex;
+	ThreadDados* dados;
+} ThreadParams;
+
+
+typedef struct {
 	int max_letras;
 	int ritmo;
 } ConfigJogo;
