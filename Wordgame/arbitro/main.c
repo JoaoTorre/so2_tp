@@ -293,13 +293,10 @@ int _tmain(int argc, TCHAR* argv[]) {
          CloseHandle(dados.hMutex);
          return -1;
      }
+
+
      _tprintf(TEXT("[ARBITRO] - Esperar ligacão de um Jogador/Bot...\n"));
-
-    
-
      while (!dados.terminar && dados.nJogadores < DEFAULT_MAX_JOGADORES) {
-         _tprintf(TEXT("[BOLSA] - Esperar ligacão de um cliente...\n"));
-
          offset = WaitForMultipleObjects(DEFAULT_MAX_JOGADORES, dados.hEvents, FALSE, INFINITE);
          i = offset - WAIT_OBJECT_0;
 
