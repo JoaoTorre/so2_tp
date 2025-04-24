@@ -31,6 +31,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
     Comandos_Jogador comandos;
     Jogador jogador;
     DWORD n;
+    TCHAR aceite[] = _T("ACEITE");
 
     do {
         ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &comandos, sizeof(comandos), &n, NULL);
@@ -53,7 +54,12 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
                 if (AdicionarJogador(params->dados,jogador) == -1) {
                     _tprintf(TEXT("[ARBITRO] - Jogador já existe com este nome: %s\n"), jogador.username);
-               }
+                }
+               
+                if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, aceite, (DWORD)(_tcslen(aceite) * sizeof(TCHAR)), &n, NULL)) {
+                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"),GetLastError());
+                }
+               
             }
             break;
 
@@ -215,7 +221,6 @@ int _tmain(int argc, TCHAR* argv[]) {
 
 
      /*           Criação de Mutex              */
-
      dados.hMutex = CreateMutex(NULL, FALSE, NULL);
 
      if (dados.hMutex == NULL) {
@@ -228,9 +233,6 @@ int _tmain(int argc, TCHAR* argv[]) {
      }
 
      /*           Criação de Evento              */
-
-     
-
      for (int i = 0; i < DEFAULT_MAX_JOGADORES; i++) {
          hEventTemp = CreateEvent(NULL, TRUE, FALSE, NULL);
 
@@ -301,7 +303,7 @@ int _tmain(int argc, TCHAR* argv[]) {
          i = offset - WAIT_OBJECT_0;
 
          if (i >= 0 && i < DEFAULT_MAX_JOGADORES) {
-             _tprintf(TEXT("[BOLSA] - Cliente %d entrou...\n"), i);
+             _tprintf(TEXT("[ARBITRO] - Jogador/Bot %d entrou...\n"), i);
              if (GetOverlappedResult(dados.hPipes[i].hInstancia,
                  &dados.hPipes[i].overlap, &nBytes, FALSE)) {
 

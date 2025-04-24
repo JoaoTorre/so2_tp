@@ -28,12 +28,14 @@ int troca_dados(void* estrutura_enviar, HANDLE hPipe, void* estrutura_comando, T
     }
 
     // Recebendo a resposta
-    ret = ReadFile(hPipe, Resposta_Login, sizeof(Resposta_Login), &n, NULL);
+    ret = ReadFile(hPipe, Resposta_Login, 100 * sizeof(TCHAR), &n, NULL);
 
     if (!ret) {
         _tprintf(TEXT("[Erro] - Ao receber mensagem do ARBITRO: %d\n"), GetLastError());
         return FALSE;
     }
+
+    Resposta_Login[n / sizeof(TCHAR)] = '\0';
 
     return TRUE;
 }
@@ -51,6 +53,7 @@ int _tmain(int argc, LPTSTR argv[]) {
     BOOL ret = FALSE;
     TCHAR Resposta_Login[MAX];
     TCHAR username[MAX];
+
 
 #ifdef UNICODE
     _setmode(_fileno(stderr), _O_WTEXT);
@@ -86,20 +89,25 @@ int _tmain(int argc, LPTSTR argv[]) {
     }
 
     _tprintf_s(_T("Insira nome de utilizador: "));
-    _fgetts(username, MAX, stdin);
+    _fgetts(jogador.username, MAX, stdin);
 
-    if (_tcslen(username) > 0 && username[_tcslen(username) - 1] == _T('\n')) {
-        username[_tcslen(username) - 1] = '\0';  
-    }
-    _tcscpy_s(jogador.username, MAX, username);
-   
+    
     //Envio de Indentificação Jogador
     comandos_jogador.comando[0] = _T("Login");
     comandos_jogador.tipo_comando = 1;
 
-    if (troca_dados(&jogador, hPipe, &comandos_jogador,&Resposta_Login))
-        _tprintf(TEXT("Resposta recebida: %s\n"), Resposta_Login);
+    if (!troca_dados(&jogador, hPipe, &comandos_jogador,&Resposta_Login))
+          _tprintf(TEXT("[Erro] Receber resposta do Arbitro: %s\n"), Resposta_Login);
 
-    
+     if (_tcscmp(Resposta_Login, TEXT("ACEITE")) == 0) {
+         _tprintf(TEXT("Inicio de Sessão com sucesso!\n"));
+
+         do {
+
+         } while (continua);
+
+     }
+
+    CloseHandle(hPipe);
     return 0;
 }
