@@ -17,6 +17,48 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
 }
 
 
+int Eliminar_Jogador_Por_Index(ThreadDados* threadData, int index) {
+    if (index < 0 || index >= threadData->nJogadores) {
+        return FALSE; 
+    }
+
+    WaitForSingleObject(threadData->hMutex, INFINITE);
+
+    for (int i = index; i < threadData->nJogadores - 1; i++) {
+        threadData->jogadores[i] = threadData->jogadores[i + 1];
+    }
+
+    threadData->nJogadores--;
+
+    if (threadData->JogadorIndex >= threadData->nJogadores) {
+        threadData->JogadorIndex = 0;
+    }
+
+    ReleaseMutex(threadData->hMutex);
+    return TRUE;
+}
+
+int  EliminarJogador(ThreadDados* threadData, TCHAR *username) {
+    int encontrou = 0;
+    for (int i = 0; i < threadData->nJogadores; i++) {
+        if (_tcscmp(threadData->jogadores[i].username, username) == 0) {
+            WaitForSingleObject(threadData->hMutex, INFINITE);
+            for (int j = i; j < threadData->nJogadores - 1; j++) {
+                threadData->jogadores[j] = threadData->jogadores[j + 1];
+            }
+            threadData->nJogadores--;
+            
+            if (threadData->JogadorIndex >= threadData->nJogadores) {
+                threadData->JogadorIndex = 0;
+            }
+            ReleaseMutex(threadData->hMutex);
+            encontrou = 1;
+        } 
+    }
+    return encontrou;
+}
+
+
 void ImprimirJogadores(ThreadDados* threadData) {
 
     for (int i = 0; i < threadData->nJogadores; i++) {
@@ -54,14 +96,24 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
                 if (AdicionarJogador(params->dados,jogador) == -1) {
                     _tprintf(TEXT("[ARBITRO] - Jogador já existe com este nome: %s\n"), jogador.username);
+                    
+                    if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("NACEITE"), (DWORD)(_tcslen(_T("NACEITE")) * sizeof(TCHAR)), &n, NULL)) {
+                        _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+                    }
+                     Eliminar_Jogador_Por_Index(params->dados, params->jogadorIndex);
+                     continua = FALSE;
                 }
-               
-                if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, aceite, (DWORD)(_tcslen(aceite) * sizeof(TCHAR)), &n, NULL)) {
+                
+                if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("ACEITE"), (DWORD)(_tcslen(_T("ACEITE")) * sizeof(TCHAR)), &n, NULL)) {
                     _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"),GetLastError());
                 }
-               
             }
             break;
+        case 2:
+            //PONTUACAO
+            if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &jogador.pontuacao,sizeof(jogador.pontuacao),&n, NULL)) {
+                _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+            }
 
         }
     } while (continua);
@@ -90,9 +142,12 @@ DWORD WINAPI threadInterface(LPVOID param) {
                     ImprimirJogadores(dados);
                 }
                 else if (_tcscmp(comandoArray[0], _T("excluir")) == 0 && nArgumentos == 2) {
-                    _tprintf(_T("\n Excluir JOGADOR : %s \n"), comandoArray[1]);
+                    _tcscpy_s(dados->jogadores->username, _countof(dados->jogadores->username), comandoArray[1]);
+                    if (EliminarJogador(dados, dados->jogadores->username))
+                        _tprintf(_T("\n JOGADOR EXCLUIDO : %s \n"), comandoArray[1]);
                 }
                 else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 2) {
+
                     _tprintf(_T("\n Iniciar BOT : %s \n"), comandoArray[1]);
 
                 }
