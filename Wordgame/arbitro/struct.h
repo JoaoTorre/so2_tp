@@ -33,6 +33,11 @@ typedef struct {
 }Jogador;
 
 typedef struct {
+	int max_letras;
+	int ritmo;
+} ConfigJogo;
+
+typedef struct {
 	DadosPipe* hPipes;
 	HANDLE* hEvents;
 	HANDLE hMutex;
@@ -41,6 +46,7 @@ typedef struct {
 	int nJogadores;
 	int JogadorIndex;
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
+	ConfigJogo config;
 }ThreadDados;
 
 typedef struct {
@@ -49,8 +55,6 @@ typedef struct {
 } ThreadParams;
 
 
-typedef struct {
-	int max_letras;
-	int ritmo;
-} ConfigJogo;
+
+
 #endif

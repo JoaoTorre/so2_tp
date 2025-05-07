@@ -8,16 +8,16 @@ int verfica_comandos(Comandos_Jogador *comandos_jogador) {
         _fgetts(comando, MAX, stdin);
         comando[_tcslen(comando) - 1] = _T('\0');
 
-        if (_tcscmp(comando, _T("pont")) == 0) {
+        if (_tcscmp(comando, _T(":pont")) == 0) {
             //Envio de Indentificação Comando
             comandos_jogador->comando[0] = _T("pont");
             comandos_jogador->tipo_comando = 2;
             _tprintf(_T("\nLISTAR PONTUACAO\n"));
         }
-        else if (_tcscmp(comando, _T("jogs")) == 0) {
+        else if (_tcscmp(comando, _T(":jogs")) == 0) {
             _tprintf(_T("\nLISTAR JOGADORES\n"));
         }
-        else if (_tcscmp(comando, _T("sair")) == 0) {
+        else if (_tcscmp(comando, _T(":sair")) == 0) {
             _tprintf(_T("\nSAIR JOGO\n"));
         }
         else {
@@ -51,7 +51,7 @@ int troca_dados(LPVOID estrutura_enviar, HANDLE hPipe, LPVOID estrutura_comando,
             return FALSE;
         }
 
-        // Recebendo a resposta
+        // Receber a resposta
         ret = ReadFile(hPipe, Resposta->INICIO, 100 * sizeof(TCHAR), &n, NULL);
 
         if (!ret) {
@@ -95,6 +95,10 @@ int _tmain(int argc, LPTSTR argv[]) {
     _setmode(_fileno(stdout), _O_WTEXT);
 #endif
     
+    _tprintf_s(_T("Insira nome de utilizador: "));
+    _fgetts(jogador.username, MAX, stdin);
+   
+
     // abrir pipe; esperar se necessário
     while (1) {
         hPipe = CreateFile(
@@ -121,11 +125,6 @@ int _tmain(int argc, LPTSTR argv[]) {
             return -1;
         }
     }
-
-
-
-    _tprintf_s(_T("Insira nome de utilizador: "));
-    _fgetts(jogador.username, MAX, stdin);
 
     
     //Envio de Indentificação Jogador

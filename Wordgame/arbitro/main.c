@@ -14,6 +14,8 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
         threadData->jogadores[threadData->JogadorIndex] = novoJogador;  
     }
     ReleaseMutex(threadData->hMutex);
+    
+    return 1;
 }
 
 
@@ -62,7 +64,7 @@ int  EliminarJogador(ThreadDados* threadData, TCHAR *username) {
 void ImprimirJogadores(ThreadDados* threadData) {
 
     for (int i = 0; i < threadData->nJogadores; i++) {
-        _tprintf(TEXT("Jogador %d: %s - Pontuação: %d\n"),i + 1,threadData->jogadores[i].username, threadData->jogadores[i].pontuacao);
+        _tprintf(TEXT("Jogador %d: %s - Pontuação: %.2f\n"),i + 1,threadData->jogadores[i].username, threadData->jogadores[i].pontuacao);
     }
 }
 
@@ -151,11 +153,23 @@ DWORD WINAPI threadInterface(LPVOID param) {
                     _tprintf(_T("\n Iniciar BOT : %s \n"), comandoArray[1]);
 
                 }
-                else if (_tcscmp(comandoArray[0], _T("acelar")) == 0) {
-                    _tprintf(_T("\nAcelar\n"));
+                else if (_tcscmp(comandoArray[0], _T("acelerar")) == 0) {
+					WaitForSingleObject(dados->hMutex, INFINITE);
+                    if (dados->config.ritmo > 1) {
+                        dados->config.ritmo--;
+                        _tprintf(_T("\nRitmo -> %d\n"), dados->config.ritmo);
+                    }
+                    else {
+						dados->config.ritmo = 1;
+                        _tprintf(_T("\nRitmo -> %d (Máximo ritmo)\n"), dados->config.ritmo);
+                    }
+					ReleaseMutex(dados->hMutex);
                 }
                 else if (_tcscmp(comandoArray[0], _T("travar")) == 0) {
-                    _tprintf(_T("\nTravar\n"));
+					WaitForSingleObject(dados->hMutex, INFINITE);
+					dados->config.ritmo++;
+					ReleaseMutex(dados->hMutex);
+                    _tprintf(_T("\nRitmo -> %d\n"), dados->config.ritmo);
                 }
                 else if (_tcscmp(comandoArray[0], _T("encerrar")) == 0) {
                     _tprintf(_T("\nEncerrar\n"));
@@ -179,8 +193,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     MEMDATA memdata;
     DWORD offset, nBytes;
     int i;
-    int maxLetras, nRitmo; // alterar para estrutura
-    dados.nJogadores = 0;
+
 
 #ifdef UNICODE 
 	_setmode(_fileno(stdin), _O_WTEXT);
@@ -188,7 +201,6 @@ int _tmain(int argc, TCHAR* argv[]) {
 	_setmode(_fileno(stderr), _O_WTEXT);
 #endif
    
-
 	hSemaphoreArbitro = CreateSemaphore(NULL, 1, 1, SEMAPHORE_UNIQUE_ARBITRO_NAME);
 
 	if (hSemaphoreArbitro == NULL) {
@@ -202,28 +214,30 @@ int _tmain(int argc, TCHAR* argv[]) {
 	}
 
     /*---- VALORES REGISTRY ----*/
-    if (!getValueFromKeyMAXLETRAS(&maxLetras)) {
+    if (!getValueFromKeyMAXLETRAS(&dados.config.max_letras)) {
         _ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de MAXLETRAS"));
-		maxLetras = DEFAULT_MAXLETRAS;
+        dados.config.max_letras = DEFAULT_MAXLETRAS;
         // guardar numa key o valor default
 		setValueToKeyMAXLETRAS(DEFAULT_MAXLETRAS);
     }
-    else if (maxLetras > MAXIMO_LETRAS) {
+    else if (dados.config.max_letras > MAXIMO_LETRAS) {
 		_ftprintf(stderr, _T("[ERRO] - O valor de MAXLETRAS não pode ser superior a %d"), MAXIMO_LETRAS);
-		maxLetras = MAXIMO_LETRAS;
+        dados.config.max_letras = MAXIMO_LETRAS;
 		setValueToKeyMAXLETRAS(MAXIMO_LETRAS);
     }
 
-    if (!getValueFromKeyRITMO(&nRitmo)) {
+    if (!getValueFromKeyRITMO(&dados.config.ritmo)) {
 		_ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de RITMO"));
-		nRitmo = DEFAULT_RITMO;
+        dados.config.ritmo = DEFAULT_RITMO;
 		setValueToKeyRITMO(DEFAULT_RITMO);
-    }else if(nRitmo < 1){
+    }else if(dados.config.ritmo < 1){
 		_ftprintf(stderr, _T("[ERRO] - O valor de RITMO não pode ser inferior a 1"));
-		nRitmo = DEFAULT_RITMO;
+        dados.config.ritmo = DEFAULT_RITMO;
 		setValueToKeyRITMO(DEFAULT_RITMO);
 	}
-	
+
+    dados.nJogadores = 0;
+
     /*----MEMÓRIA COMPARTILHADA----*/
 
     // Iniciar arquivo de memória compartilhada
