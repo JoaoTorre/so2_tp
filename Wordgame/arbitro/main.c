@@ -19,52 +19,35 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
 }
 
 
-int Eliminar_Jogador_Por_Index(ThreadDados* threadData, int index) {
-    if (index < 0 || index >= threadData->nJogadores) {
-        return FALSE; 
-    }
 
-    WaitForSingleObject(threadData->hMutex, INFINITE);
-
-    for (int i = index; i < threadData->nJogadores - 1; i++) {
-        threadData->jogadores[i] = threadData->jogadores[i + 1];
-    }
-
-    threadData->nJogadores--;
-
-    if (threadData->JogadorIndex >= threadData->nJogadores) {
-        threadData->JogadorIndex = 0;
-    }
-
-    ReleaseMutex(threadData->hMutex);
-    return TRUE;
-}
-
-int  EliminarJogador(ThreadDados* threadData, TCHAR *username) {
-    int encontrou = 0;
-    for (int i = 0; i < threadData->nJogadores; i++) {
+int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
+   DWORD n;
+  
+   for (int i = 0; i < threadData->nJogadores; i++) {
+        RemoveNovaLinha(threadData->jogadores[i].username);
         if (_tcscmp(threadData->jogadores[i].username, username) == 0) {
-            WaitForSingleObject(threadData->hMutex, INFINITE);
-            for (int j = i; j < threadData->nJogadores - 1; j++) {
-                threadData->jogadores[j] = threadData->jogadores[j + 1];
-            }
-            threadData->nJogadores--;
-            
-            if (threadData->JogadorIndex >= threadData->nJogadores) {
-                threadData->JogadorIndex = 0;
-            }
-            ReleaseMutex(threadData->hMutex);
-            encontrou = 1;
-        } 
+            if (threadData->hPipes[i].activo) {
+                WaitForSingleObject(threadData->hMutex, INFINITE);
+                threadData->hPipes[i].activo = FALSE;
+                threadData->jogadores[i].ativo = FALSE;
+                ReleaseMutex(threadData->hMutex);
+                if (!WriteFile(threadData->hPipes[i].hInstancia, _T("EXCLUIDO"), (DWORD)(_tcslen(_T("EXCLUIDO")) * sizeof(TCHAR)), &n, NULL)) {
+                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+                }
+               // DisconnectNamedPipe(threadData->hPipes[i].hInstancia);
+            } 
+            return 1;
+        }
+
     }
-    return encontrou;
+   return 0;
 }
 
 
 void ImprimirJogadores(ThreadDados* threadData) {
-
-    for (int i = 0; i < threadData->nJogadores; i++) {
-        _tprintf(TEXT("Jogador %d: %s - Pontuação: %.2f\n"),i + 1,threadData->jogadores[i].username, threadData->jogadores[i].pontuacao);
+     for (int i = 0; i < threadData->nJogadores; i++) {
+       if(threadData->hPipes[i].activo)
+            _tprintf(TEXT("Jogador %d: %s - Pontuação: %.2f\n"), i + 1, threadData->jogadores[i].username, threadData->jogadores[i].pontuacao);
     }
 }
 
@@ -76,15 +59,16 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
     Jogador jogador;
     DWORD n;
     TCHAR aceite[] = _T("ACEITE");
+    DWORD jogadores_ativos = 0;
 
     do {
-        ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &comandos, sizeof(comandos), &n, NULL);
-        if (!ret) {
-            _tprintf(TEXT("[ERRO] - Falha ao ler do pipe. Código de erro: %d\n"), GetLastError());
-            continua = FALSE;
-            break;
-        }
-
+         ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &comandos, sizeof(comandos), &n, NULL);
+            if (!ret) {
+                _tprintf(TEXT("[ERRO] - Falha ao ler do pipe. Código de erro: %d\n"), GetLastError());
+                continua = FALSE;
+                break;
+         }
+     
         switch (comandos.tipo_comando) {
         case 1:
             //INICIO
@@ -101,21 +85,64 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                     
                     if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("NACEITE"), (DWORD)(_tcslen(_T("NACEITE")) * sizeof(TCHAR)), &n, NULL)) {
                         _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-                    }
-                     Eliminar_Jogador_Por_Index(params->dados, params->jogadorIndex);
-                     continua = FALSE;
+                    } 
+
+                    continua = FALSE;
                 }
-                
-                if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("ACEITE"), (DWORD)(_tcslen(_T("ACEITE")) * sizeof(TCHAR)), &n, NULL)) {
-                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"),GetLastError());
+                else {
+                    if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("ACEITE"), (DWORD)(_tcslen(_T("ACEITE")) * sizeof(TCHAR)), &n, NULL)) {
+                        _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+                    } 
+
+                    params->dados->jogadores[params->jogadorIndex].ativo = TRUE;
                 }
             }
             break;
         case 2:
             //PONTUACAO
+            if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("PONTUACAO"), (DWORD)(_tcslen(_T("PONTUACAO")) * sizeof(TCHAR)), &n, NULL)) {
+                _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+            }
+
+
             if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &jogador.pontuacao,sizeof(jogador.pontuacao),&n, NULL)) {
                 _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
             }
+            break;
+        case 3:
+             //JOGADORES
+             
+              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("JOGS"), (DWORD)(_tcslen(_T("JOGS")) * sizeof(TCHAR)), &n, NULL)) {
+                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
+              }
+
+
+              for (int i = 0; i < params->dados->nJogadores; i++) {
+                  jogadores_ativos++;
+              }
+                
+              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia,
+                  &jogadores_ativos,
+                  sizeof(DWORD),
+                  &n,
+                  NULL)) {
+                  _tprintf(TEXT("[ERRO] - Escrever nJogadores no pipe! %d\n"), GetLastError());
+              }
+
+              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia,
+                  &params->dados->jogadores,
+                  sizeof(params->dados->jogadores),
+                  &n,
+                  NULL)) {
+                  // erro ao escrever
+              }
+
+             break;
+        case 4:
+            //JOGADOR EXCLUIDO
+            _tprintf(TEXT("[ARBITRO] - Saiu Jogador: %s\n"), jogador.username);
+             continua = FALSE;
+            break;
 
         }
     } while (continua);
@@ -123,30 +150,35 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 }
 
 DWORD WINAPI threadInterface(LPVOID param) {
-    ThreadDados* dados = (ThreadDados*)param;
+    ThreadDados *dados = (ThreadDados*)param;
     TCHAR comando[MAX], ** comandoArray = NULL;
     TCHAR nomeFicheiro[MAX];
     DWORD nArgumentos = 0;
     BOOL continua = TRUE;
+    TCHAR username [MAX];
 
     do {
         _tprintf(_T("\nInsira Comando: "));
         _fgetts(comando, MAX, stdin);
         comando[_tcslen(comando) - 1] = _T('\0');
 
-        free(comandoArray);
+        if (comandoArray != NULL) {
+            free(comandoArray);
+            comandoArray = NULL;
+        }
 
         if (_tcslen(comando) > 0) {
             comandoArray = splitString(comando, _T(" "), &nArgumentos);
-
                 if (_tcscmp(comandoArray[0], _T("listar")) == 0) {
                     _tprintf(_T("\nLISTAR JOGADORES\n"));
                     ImprimirJogadores(dados);
                 }
                 else if (_tcscmp(comandoArray[0], _T("excluir")) == 0 && nArgumentos == 2) {
-                    _tcscpy_s(dados->jogadores->username, _countof(dados->jogadores->username), comandoArray[1]);
-                    if (EliminarJogador(dados, dados->jogadores->username))
+                    _tcsncpy_s(username, _countof(username), comandoArray[1], _countof(username) - 1);
+                    username[_countof(username) - 1] = _T('\0');
+                    if (ExcluirJogador(dados, username))
                         _tprintf(_T("\n JOGADOR EXCLUIDO : %s \n"), comandoArray[1]);
+
                 }
                 else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 2) {
 

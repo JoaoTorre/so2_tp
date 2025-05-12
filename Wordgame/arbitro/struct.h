@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
 	TCHAR username[MAX];
 	float pontuacao;
+	BOOL ativo;
 }Jogador;
 
 typedef struct {

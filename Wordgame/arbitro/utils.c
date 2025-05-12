@@ -11,6 +11,13 @@ TCHAR* toUpperString(TCHAR* string) {
 }
 
 
+void RemoveNovaLinha(TCHAR* str) {
+	size_t len = _tcslen(str);
+	if (len > 0 && str[len - 1] == '\n') {
+		str[len - 1] = '\0';
+	}
+}
+
 TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size) {
     TCHAR* nextToken = NULL, ** temp, ** returnArray = NULL;
     TCHAR* token = _tcstok_s(str, delim, &nextToken);

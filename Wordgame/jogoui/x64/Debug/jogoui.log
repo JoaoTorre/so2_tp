@@ -1,8 +1,8 @@
 ﻿  main.c
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(13,42): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'unsigned short [5]'
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(131,33): warning C4047: '=': 'TCHAR' difere em níveis de indireção de 'unsigned short [6]'
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(159,10): warning C4013: '_getch' indefinido; assumindo extern retornando int
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(89,11): warning C4101: 'username': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(88,11): warning C4101: 'Resposta_Login': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(85,12): warning C4101: 'n': variável local não referenciada
-  jogoui.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(219,51): warning C4133: 'função': tipos incompatíveis - de 'char [16]' para 'LPCWSTR'
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(177,11): warning C4101: 'username': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(176,11): warning C4101: 'Resposta_Login': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(173,12): warning C4101: 'n': variável local não referenciada
+  utils.c
+  Gerando Código...
+  jogoui.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
