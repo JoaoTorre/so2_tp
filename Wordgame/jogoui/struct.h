@@ -2,35 +2,51 @@
 #include <tchar.h>
 #include <stdlib.h>
 #include <Windows.h>
-#define NOME_MUTEX "Global\\MeuMutex"
+
 
 #define MAX 255
 
-
 typedef struct {
 	TCHAR username[MAX];
-	float PONTUACAO;
+	float pontuacao;
+	BOOL ativo;
 }Jogador;
 
 
 typedef struct {
-	TCHAR INICIO[MAX];
-	Jogador jogador;
-	DWORD nJogadores;
-	Jogador ListaJogadores[20];
-}Respostas;
+	DWORD tipo;       
+	DWORD tamanho;     
+} MensagemHeader;
+
 
 typedef struct {
 	TCHAR comando[MAX];
 	int tipo_comando;
 } Comandos_Jogador;
 
+typedef struct {
+	Jogador* jogadores;
+	int nJogadoresativos;
+}EnviaDados;
+
 
 typedef struct {
-	HANDLE *hPipe;            
+	HANDLE* hPipe;
+	HANDLE hEventoParar;
+	HANDLE hEventoAvancar;
+	HANDLE hMutex;
+	float pontuacao;
+	Comandos_Jogador* comandos;
+	Jogador* jogador;
+	BOOL Parar;
+	BOOL* Continua;
+} DadosPartilhados;
+
+typedef struct { 
 	BOOL *Continua;
-	Respostas respostas;
-	Comandos_Jogador * comandos;
 	HANDLE *hMutex;
-	Jogador *jogador;
+	HANDLE *hEvento;
+	MensagemHeader *header;
+	DadosPartilhados *dadosPartilhados;
 } ThreadEscutaParam;
+

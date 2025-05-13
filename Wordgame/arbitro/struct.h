@@ -56,6 +56,17 @@ typedef struct {
 } ThreadParams;
 
 
+typedef struct {
+	DWORD tipo;
+	DWORD tamanho;
+} MensagemHeader;
+
+typedef struct {
+	Jogador* jogadores;
+	int nJogadoresativos;
+}EnviaDados;
+
+
 
 
 #endif

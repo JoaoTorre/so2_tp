@@ -15,13 +15,13 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
     }
     ReleaseMutex(threadData->hMutex);
     
-    return 1;
+    return TRUE;
 }
-
 
 
 int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
    DWORD n;
+   MensagemHeader header;
   
    for (int i = 0; i < threadData->nJogadores; i++) {
         RemoveNovaLinha(threadData->jogadores[i].username);
@@ -31,16 +31,20 @@ int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
                 threadData->hPipes[i].activo = FALSE;
                 threadData->jogadores[i].ativo = FALSE;
                 ReleaseMutex(threadData->hMutex);
-                if (!WriteFile(threadData->hPipes[i].hInstancia, _T("EXCLUIDO"), (DWORD)(_tcslen(_T("EXCLUIDO")) * sizeof(TCHAR)), &n, NULL)) {
-                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-                }
-               // DisconnectNamedPipe(threadData->hPipes[i].hInstancia);
+                TCHAR msg[] = _T("EXCLUIDO");
+                header.tipo = 40;
+                header.tamanho = sizeof(msg);
+                WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
+                WriteFile(threadData->hPipes[i].hInstancia, msg, sizeof(msg), &n, NULL);
+                FlushFileBuffers(threadData->hPipes[i].hInstancia);
+                DisconnectNamedPipe(threadData->hPipes[i].hInstancia);
+                CloseHandle(threadData->hPipes[i].hInstancia);
             } 
-            return 1;
+            return TRUE;
         }
 
     }
-   return 0;
+   return FALSE;
 }
 
 
@@ -58,96 +62,109 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
     Comandos_Jogador comandos;
     Jogador jogador;
     DWORD n;
-    TCHAR aceite[] = _T("ACEITE");
-    DWORD jogadores_ativos = 0;
+    MensagemHeader header;
+    EnviaDados dadosParaEnviar;
+    HANDLE pipe = params->dados->hPipes[params->jogadorIndex].hInstancia;
 
     do {
-         ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &comandos, sizeof(comandos), &n, NULL);
-            if (!ret) {
-                _tprintf(TEXT("[ERRO] - Falha ao ler do pipe. Código de erro: %d\n"), GetLastError());
+        // Ler comando
+        ret = ReadFile(pipe, &comandos, sizeof(comandos), &n, NULL);
+        if (!ret) {
+            _tprintf(TEXT("[ERRO] - Falha ao ler comando do pipe. Código de erro: %d\n"), GetLastError());
+            continua = FALSE;
+            break;
+        }
+
+        switch (comandos.tipo_comando) {
+        case 1: // INICIO LOGIN
+            ret = ReadFile(pipe, &jogador, sizeof(Jogador), &n, NULL);
+            if (!ret || n != sizeof(Jogador)) {
+                _tprintf(TEXT("[ERRO] - Falha ao ler struct Jogador. Código: %d\n"), GetLastError());
                 continua = FALSE;
                 break;
-         }
-     
-        switch (comandos.tipo_comando) {
-        case 1:
-            //INICIO
-            ret = ReadFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &jogador, sizeof(jogador), &n, NULL);
-
-            if (ret != FALSE) {
-                _tprintf(TEXT("[ARBITRO] - Recebi %d bytes de dados de login do cliente.\n"), n);
-                _tprintf(TEXT("[ARBITRO] - Username: %s\n"), jogador.username);
-                jogador.pontuacao = 0;
-                params->dados->JogadorIndex = params->jogadorIndex;
-
-                if (AdicionarJogador(params->dados,jogador) == -1) {
-                    _tprintf(TEXT("[ARBITRO] - Jogador já existe com este nome: %s\n"), jogador.username);
-                    
-                    if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("NACEITE"), (DWORD)(_tcslen(_T("NACEITE")) * sizeof(TCHAR)), &n, NULL)) {
-                        _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-                    } 
-
-                    continua = FALSE;
-                }
-                else {
-                    if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("ACEITE"), (DWORD)(_tcslen(_T("ACEITE")) * sizeof(TCHAR)), &n, NULL)) {
-                        _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-                    } 
-
-                    params->dados->jogadores[params->jogadorIndex].ativo = TRUE;
-                }
-            }
-            break;
-        case 2:
-            //PONTUACAO
-            if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("PONTUACAO"), (DWORD)(_tcslen(_T("PONTUACAO")) * sizeof(TCHAR)), &n, NULL)) {
-                _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
             }
 
+            _tprintf(TEXT("[ARBITRO] - Login recebido. Username: %s\n"), jogador.username);
+            jogador.pontuacao = 0;
+            params->dados->JogadorIndex = params->jogadorIndex;
 
-            if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, &jogador.pontuacao,sizeof(jogador.pontuacao),&n, NULL)) {
-                _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-            }
-            break;
-        case 3:
-             //JOGADORES
-             
-              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia, _T("JOGS"), (DWORD)(_tcslen(_T("JOGS")) * sizeof(TCHAR)), &n, NULL)) {
-                    _tprintf(TEXT("[ERRO] - Escrever no pipe! (WriteFile) %d \n"), GetLastError());
-              }
+            WaitForSingleObject(params->dados->hMutex, INFINITE);
+            if (AdicionarJogador(params->dados, jogador) == -1) {
+                _tprintf(TEXT("[ARBITRO] - Jogador já existe: %s\n"), jogador.username);
 
-
-              for (int i = 0; i < params->dados->nJogadores; i++) {
-                  jogadores_ativos++;
-              }
+                // "NACEITE"
+                TCHAR msg[] = _T("NACEITE");
+                header.tipo = 99; 
+                header.tamanho = sizeof(msg);
+                WriteFile(pipe, &header, sizeof(header), &n, NULL);
+                WriteFile(pipe, msg, sizeof(msg), &n, NULL);
+                continua = FALSE;
                 
-              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia,
-                  &jogadores_ativos,
-                  sizeof(DWORD),
-                  &n,
-                  NULL)) {
-                  _tprintf(TEXT("[ERRO] - Escrever nJogadores no pipe! %d\n"), GetLastError());
-              }
+            }       
+            else { // "ACEITE"
+                TCHAR msg[] = _T("ACEITE");
+                header.tipo = 98; 
+                header.tamanho = sizeof(msg);
+                WriteFile(pipe, &header, sizeof(header), &n, NULL);
+                WriteFile(pipe, msg, sizeof(msg), &n, NULL);
+            }
+            ReleaseMutex(params->dados->hMutex);
+            break;
 
-              if (!WriteFile(params->dados->hPipes[params->jogadorIndex].hInstancia,
-                  &params->dados->jogadores,
-                  sizeof(params->dados->jogadores),
-                  &n,
-                  NULL)) {
-                  // erro ao escrever
-              }
+        case 2: // PEDIDO PONTUAÇÃO
+        {
+            header.tipo = 2;
+            header.tamanho = sizeof(float);
+            WriteFile(pipe, &header, sizeof(header), &n, NULL);
 
-             break;
-        case 4:
-            //JOGADOR EXCLUIDO
-            _tprintf(TEXT("[ARBITRO] - Saiu Jogador: %s\n"), jogador.username);
+            float pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
+            WriteFile(pipe, &pontuacao, sizeof(float), &n, NULL);
+            break;
+        }
+
+        case 3: // PEDIDO LISTA DE JOGADORES
+        {
+            ZeroMemory(&dadosParaEnviar, sizeof(EnviaDados));
+            dadosParaEnviar.jogadores = (Jogador*)malloc(DEFAULT_MAX_JOGADORES * sizeof(Jogador));
+
+            header.tipo = 3;
+            header.tamanho = sizeof(EnviaDados);
+            WriteFile(pipe, &header, sizeof(header), &n, NULL);
+
+            
+            for (int i = 0; i < params->dados->nJogadores; i++) {
+                if (params->dados->hPipes[i].activo) {
+                    dadosParaEnviar.jogadores[dadosParaEnviar.nJogadoresativos] = params->dados->jogadores[i];
+                    dadosParaEnviar.nJogadoresativos++;
+                }
+            }
+
+            WriteFile(pipe, &dadosParaEnviar.nJogadoresativos, sizeof(int), &n, NULL);
+            WriteFile(pipe, dadosParaEnviar.jogadores, dadosParaEnviar.nJogadoresativos * sizeof(Jogador), &n, NULL);
+
+            free(dadosParaEnviar.jogadores);
+            break;
+        }
+
+        case 4: // JOGADOR SAIU
+            _tprintf(TEXT("[ARBITRO] - Jogador saiu: %s\n"), jogador.username);
+             FlushFileBuffers(pipe);
+             DisconnectNamedPipe(pipe);
+             CloseHandle(pipe);
              continua = FALSE;
             break;
 
+        default:
+            _tprintf(TEXT("[ARBITRO] - Comando desconhecido: %d\n"), comandos.tipo_comando);
+            continua = FALSE;
+            break;
         }
+
     } while (continua);
+
     return 0;
 }
+
 
 DWORD WINAPI threadInterface(LPVOID param) {
     ThreadDados *dados = (ThreadDados*)param;
@@ -177,7 +194,7 @@ DWORD WINAPI threadInterface(LPVOID param) {
                     _tcsncpy_s(username, _countof(username), comandoArray[1], _countof(username) - 1);
                     username[_countof(username) - 1] = _T('\0');
                     if (ExcluirJogador(dados, username))
-                        _tprintf(_T("\n JOGADOR EXCLUIDO : %s \n"), comandoArray[1]);
+                        _tprintf(_T("\nJogador excluido:%s\n"), comandoArray[1]);
 
                 }
                 else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 2) {

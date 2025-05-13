@@ -11,4 +11,5 @@
 
 #define name_pipe  _T("\\\\.\\pipe\\mynamedpipe")
 
+
 #endif UTILS_H
