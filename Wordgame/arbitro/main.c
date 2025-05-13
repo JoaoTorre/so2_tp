@@ -29,7 +29,6 @@ int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
             if (threadData->hPipes[i].activo) {
                 WaitForSingleObject(threadData->hMutex, INFINITE);
                 threadData->hPipes[i].activo = FALSE;
-                threadData->jogadores[i].ativo = FALSE;
                 ReleaseMutex(threadData->hMutex);
                 TCHAR msg[] = _T("EXCLUIDO");
                 header.tipo = 40;
@@ -148,6 +147,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
         case 4: // JOGADOR SAIU
             _tprintf(TEXT("[ARBITRO] - Jogador saiu: %s\n"), jogador.username);
+             params->dados->hPipes[params->jogadorIndex].activo = FALSE;
              FlushFileBuffers(pipe);
              DisconnectNamedPipe(pipe);
              CloseHandle(pipe);
