@@ -2,10 +2,11 @@
 #include "struct.h"
 
 
-int verfica_comandos(HANDLE* hMutex, DadosPartilhados* dadosPartilhados) {
+int verfica_comandos(DadosPartilhados* dadosPartilhados) {
     TCHAR comando[MAX];
     DWORD n;
     HANDLE* hPipe = dadosPartilhados->hPipe;
+    HANDLE* hMutex = dadosPartilhados->hMutex;
     Comandos_Jogador* comandos_jogador = dadosPartilhados->comandos;
 
    // _tprintf(_T("\nInsira Comando: "));
@@ -21,7 +22,7 @@ int verfica_comandos(HANDLE* hMutex, DadosPartilhados* dadosPartilhados) {
         ReleaseMutex(*hMutex);
 
         ResetEvent(dadosPartilhados->hEventoAvancar);
-        SetEvent(dadosPartilhados->Parar);
+        SetEvent(dadosPartilhados->hEventoParar);
 
         WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
        
@@ -32,7 +33,8 @@ int verfica_comandos(HANDLE* hMutex, DadosPartilhados* dadosPartilhados) {
             ReleaseMutex(dadosPartilhados->hMutex);
             _tprintf(TEXT("\nPontuação atual: %.2f\n"), dadosPartilhados->pontuacao);
         }
-        
+
+        ResetEvent(dadosPartilhados->hEventoParar);
         SetEvent(dadosPartilhados->hEventoAvancar);
         return TRUE;
 
@@ -45,7 +47,7 @@ int verfica_comandos(HANDLE* hMutex, DadosPartilhados* dadosPartilhados) {
         ReleaseMutex(hMutex);
       
         ResetEvent(dadosPartilhados->hEventoAvancar);
-        SetEvent(dadosPartilhados->Parar);
+        SetEvent(dadosPartilhados->hEventoParar);
 
         WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
 
@@ -59,12 +61,14 @@ int verfica_comandos(HANDLE* hMutex, DadosPartilhados* dadosPartilhados) {
 
         if (ret && n == nJogadores * sizeof(Jogador)) {
             for (int i = 0; i < nJogadores; i++) {
-                _tprintf(TEXT("\nJogador: %s\n"), jogadoresRecebidos->jogadores[i].username);
-                _tprintf(TEXT("\nPontuação: %.2f\n"), jogadoresRecebidos->jogadores[i].pontuacao);
+                _tprintf(TEXT("\n--- Jogador %d ---\n"), i + 1);
+                _tprintf(TEXT("Nome      : %s\n"), jogadoresRecebidos->jogadores[i].username);
+                _tprintf(TEXT("Pontuação : %.2f\n"), jogadoresRecebidos->jogadores[i].pontuacao);
             }
         }
         free(jogadoresRecebidos->jogadores);
         free(jogadoresRecebidos);
+        ResetEvent(dadosPartilhados->hEventoParar);
         SetEvent(dadosPartilhados->hEventoAvancar);
         return TRUE;
 
@@ -94,9 +98,9 @@ DWORD WINAPI threadArbitro(LPVOID param) {
     Comandos_Jogador comandos;
 
     if (!loginEnviado) {
-        WaitForSingleObject(dados->hMutex, INFINITE);
+        WaitForSingleObject(*dados->dadosPartilhados->hMutex, INFINITE);
         dados->dadosPartilhados->comandos->tipo_comando = 1;
-        ReleaseMutex(dados->hMutex);
+        ReleaseMutex(*dados->dadosPartilhados->hMutex);
         WriteFile(*dados->dadosPartilhados->hPipe,dados->dadosPartilhados->comandos, sizeof(Comandos_Jogador), &n, NULL);
         WriteFile(*dados->dadosPartilhados->hPipe,dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
         loginEnviado = TRUE;
@@ -126,7 +130,6 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
                         _tprintf(TEXT("\nJogador não aceite: %s\n"), resposta);
-                        ReleaseMutex(dados->hMutex);
                         *dados->Continua = FALSE;
                         break;
                 }
@@ -134,7 +137,6 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                         TCHAR resposta[10];
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
-                        WaitForSingleObject(dados->hMutex, INFINITE);
                         *dados->Continua = FALSE;
                         break;
                     }
@@ -214,7 +216,7 @@ int _tmain(int argc, LPTSTR argv[]) {
 
     /*DADOS PARTILHADOS ENTRE THREAD PRINCIPAL E THREAD ESCUTA ARBITRO*/
     DadosPartilhados dadosPartilhados;
-    dadosPartilhados.hMutex = CreateMutex(NULL, FALSE, NULL);
+    dadosPartilhados.hMutex = &hMutex;
     dadosPartilhados.hEventoParar = CreateEvent(NULL, TRUE,FALSE, NULL);
     dadosPartilhados.hEventoAvancar = CreateEvent(NULL, TRUE, TRUE, NULL);
     dadosPartilhados.pontuacao = 0;
@@ -239,7 +241,7 @@ int _tmain(int argc, LPTSTR argv[]) {
     }
 
     do {
-        verfica_comandos(&hMutex, &dadosPartilhados);
+        verfica_comandos(&dadosPartilhados);
     } while (continua);
 
   

@@ -34,18 +34,15 @@ typedef struct {
 	HANDLE* hPipe;
 	HANDLE hEventoParar;
 	HANDLE hEventoAvancar;
-	HANDLE hMutex;
+	HANDLE *hMutex;
 	float pontuacao;
 	Comandos_Jogador* comandos;
 	Jogador* jogador;
-	BOOL Parar;
 	BOOL* Continua;
 } DadosPartilhados;
 
 typedef struct { 
 	BOOL *Continua;
-	HANDLE *hMutex;
-	HANDLE *hEvento;
 	MensagemHeader *header;
 	DadosPartilhados *dadosPartilhados;
 } ThreadEscutaParam;

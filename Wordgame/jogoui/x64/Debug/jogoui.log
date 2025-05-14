@@ -1,8 +1,8 @@
 ﻿  main.c
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(24,34): warning C4022: 'SetEvent': incompatibilidade de ponteiro para parâmetro real 1
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(48,34): warning C4022: 'SetEvent': incompatibilidade de ponteiro para parâmetro real 1
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(94,22): warning C4101: 'comandos': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(166,11): warning C4101: 'username': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(165,11): warning C4101: 'Resposta_Login': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(163,11): warning C4101: 'n': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(98,22): warning C4101: 'comandos': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(168,11): warning C4101: 'username': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(167,11): warning C4101: 'Resposta_Login': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(165,11): warning C4101: 'n': variável local não referenciada
+  utils.c
+  Gerando Código...
   jogoui.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
