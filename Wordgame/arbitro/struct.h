@@ -66,7 +66,15 @@ typedef struct {
 	int nJogadoresativos;
 }EnviaDados;
 
-
+typedef struct {
+	TCHAR* letrasAtuais;
+	const TCHAR* alfabeto;
+	const TCHAR* vogais;
+	BOOLEAN continuar;
+	CRITICAL_SECTION cs;
+	unsigned int ritmo;
+	unsigned int max_letras;
+} td_dataNewLetter;
 
 
 #endif

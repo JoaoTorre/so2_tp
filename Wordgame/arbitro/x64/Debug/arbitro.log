@@ -1,8 +1,10 @@
 ﻿  main.c
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(27,9): warning C4013: 'RemoveNovaLinha' indefinido; assumindo extern retornando int
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(172,11): warning C4101: 'nomeFicheiro': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(299,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(310,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(321,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(239,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
-  arbitro.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(27,9): warning C4013: 'RemoveNovaLinha' indefinido; assumindo extern retornando int
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(172,11): warning C4101: 'nomeFicheiro': variável local não referenciada
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(299,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(310,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(321,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(239,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
+  utils.c
+  Gerando Código...
+  arbitro.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe

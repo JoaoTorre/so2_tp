@@ -18,7 +18,6 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
     return TRUE;
 }
 
-
 int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
    DWORD n;
    MensagemHeader header;
@@ -46,7 +45,6 @@ int ExcluirJogador(ThreadDados* threadData, TCHAR* username) {
    return FALSE;
 }
 
-
 void ImprimirJogadores(ThreadDados* threadData) {
      for (int i = 0; i < threadData->nJogadores; i++) {
        if(threadData->hPipes[i].activo)
@@ -54,6 +52,116 @@ void ImprimirJogadores(ThreadDados* threadData) {
     }
 }
 
+BOOLEAN VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION cs) {
+    EnterCriticalSection(&cs);
+    int tamLetras = (int)_tcslen(letrasAtuais);
+    BOOLEAN letraValida;
+
+
+    for (int i = 0; i < _tcslen(leitura); i++) {
+        letraValida = FALSE;
+        for (int j = 0; j < tamLetras; j++) {
+            if (leitura[i] == letrasAtuais[j]) {
+                letrasAtuais[j] = _T(' ');
+                letraValida = TRUE;
+                break;
+            }
+        }
+
+        if (!letraValida) {
+            _tprintf(_T("Letra %c não é válida!\n"), leitura[i]);
+            LeaveCriticalSection(&cs);
+
+            return FALSE;
+        }
+    }
+
+    LeaveCriticalSection(&cs);
+    return TRUE;
+}
+
+BOOLEAN VerificaPalavra(TCHAR leitura[12], TCHAR* dicionario[]) {
+    for (int i = 0; dicionario[i] != NULL; i++) {  
+        if (_tcscmp(leitura, dicionario[i]) == 0) {
+            return TRUE;  
+        }
+    }
+    return FALSE;  
+}
+
+VOID OrdenarArray(TCHAR* letras) {
+    int j = 0;
+
+    for (int i = 0; i <= (int) _tcslen(letras); i++) {
+        if (letras[i] != _T(' ')) {
+            letras[j++] = letras[i];
+        }
+    }
+
+    while (j <= (int) _tcslen(letras)) {
+        letras[j++] = _T(' ');
+    }
+}
+
+VOID novaLetra(TCHAR* letrasAtuais, TCHAR alfabeto[], TCHAR vogais[], unsigned int maxLetras) {
+    int controladorVogais = 0;
+    TCHAR letraNova = _T('\0');
+    int len = (int)_tcslen(letrasAtuais);
+
+    if (len > 3) {
+        for (int i = 0; i < len; i++) {
+            if (letrasAtuais[i] == _T('a') || letrasAtuais[i] == _T('e') ||
+                letrasAtuais[i] == _T('i') || letrasAtuais[i] == _T('o') ||
+                letrasAtuais[i] == _T('u')) {
+                controladorVogais++;
+            }
+        }
+        if (controladorVogais < 3) {
+            letraNova = vogais[RandomNumber(0, 4)];
+        }
+        else {
+            letraNova = alfabeto[RandomNumber(0, 22)];
+        }
+    }
+    else {
+        letraNova = alfabeto[RandomNumber(0, 22)];
+    }
+
+    if (len < maxLetras) {
+        letrasAtuais[len] = letraNova;
+        letrasAtuais[len + 1] = _T('\0');
+        return;
+    }
+
+    // Se o array estiver cheio
+    for (int i = 0; i < maxLetras - 1; i++) {
+        letrasAtuais[i] = letrasAtuais[i + 1];
+    }
+    letrasAtuais[maxLetras - 1] = letraNova;
+}
+
+VOID ShowActualLetters(TCHAR* letrasAtuais) {
+    // mostra o array de letras atuais
+    _tprintf_s(_T("\nLetras atuais: "));
+
+    for (int i = 0; i < (int)_tcslen(letrasAtuais); i++) {
+        _tprintf(_T("%c "), letrasAtuais[i]);
+    }
+}
+
+DWORD WINAPI ThreadNewLetter(LPVOID param) {
+    td_dataNewLetter* data = (td_dataNewLetter*)param;
+
+    while (data->continuar) {
+        Sleep(data->ritmo * 1000); 
+        EnterCriticalSection(&data->cs);
+        novaLetra(data->letrasAtuais, data->alfabeto, data->vogais, data->max_letras);
+        ShowActualLetters(data->letrasAtuais);
+        LeaveCriticalSection(&data->cs);
+    }
+
+    return 0;
+}
 
 DWORD WINAPI threadTrataCliente(LPVOID param) {
     ThreadParams* params = (ThreadParams*)param;
@@ -153,7 +261,51 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
              CloseHandle(pipe);
              continua = FALSE;
             break;
+        case 5: // recebe palavra
+            _tprintf(_T("[ARBITRO] - Palvra recebida: %ls"), comandos.comando);
+            // fazer verificação da palavra
+			TCHAR* leitura = comandos.comando; // perigo corrigir
 
+            size_t len = _tcslen(leitura);
+            if (len > 0 && leitura[len - 1] == _T('\n')) {
+                leitura[len - 1] = _T('\0');
+                len--;
+            }
+
+            if (1 > len && len > MAXIMO_LETRAS) { // corrigir
+                _tprintf_s(_T("Palavra muito longa! Tente novamente.\n"));
+				params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
+            }
+            else {
+                TCHAR letrasAtuaisCopyVerificacao[13];
+                TCHAR letrasAtuaisCopyNewLetter[13];
+
+                // Cria uma copia do array de letras disponiveis
+                _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), letrasAtuais, _tcslen(letrasAtuais));
+                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao)) {
+                    _tprintf_s(_T("DEBUG - Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
+
+                    if (VerificaPalavra(leitura, dicionario)) {
+                        // dar os pontos ao jogador e atualizar letras disponiveis
+                        _tprintf_s(_T("Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
+                        OrdenarArray(letrasAtuaisCopyVerificacao);
+                        _tcsncpy_s(letrasAtuais, MAX_TAM_LETRAS + 1, letrasAtuaisCopyVerificacao, MAX_TAM_LETRAS + 1);
+                        params->dados->jogadores[params->jogadorIndex].pontuacao += len;
+                    }
+                    else {
+                        // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
+                        _tprintf_s(_T("Palavra não encontrada! Tente novamente.\n"));
+                        params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
+                    }
+                }
+                else {
+                    // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
+                    _tprintf_s(_T("Letras erradas! Tente novamente.\n"));
+                    novaLetra(letrasAtuais, alfabeto, vogais);
+                    params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
+                }
+
+            }
         default:
             _tprintf(TEXT("[ARBITRO] - Comando desconhecido: %d\n"), comandos.tipo_comando);
             continua = FALSE;
@@ -164,7 +316,6 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
     return 0;
 }
-
 
 DWORD WINAPI threadInterface(LPVOID param) {
     ThreadDados *dados = (ThreadDados*)param;
@@ -233,7 +384,6 @@ DWORD WINAPI threadInterface(LPVOID param) {
         free(comandoArray);
         return 0;
 }
-
 
 int _tmain(int argc, TCHAR* argv[]) {
     HANDLE hSemaphoreArbitro, hSemaphoreMaxClientes, hEventTemp, hPipe, hThreadInterface;

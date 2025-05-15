@@ -40,7 +40,7 @@
 // CONSTANTES NOMES SEMAFOROS
 #define SEMAPHORE_UNIQUE_ARBITRO_NAME _T("SEMAPHORE_UNIQUE_ARBITRO")
 
-
+INT RandomNumber(unsigned int min, unsigned int max);
 TCHAR* toUpperString(TCHAR* string);
 TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size);
 BOOL getValueFromKeyMAXLETRAS(unsigned int* maxLetras);

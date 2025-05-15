@@ -1,6 +1,9 @@
 #include "utils.h"
 #include "struct.h"
 
+INT RandomNumber(unsigned int min, unsigned int max){
+	return (rand() % (max - min + 1)) + min;
+}
 
 TCHAR* toUpperString(TCHAR* string) {
 	for (unsigned int i = 0; i < _tcslen(string); i++) {
@@ -9,7 +12,6 @@ TCHAR* toUpperString(TCHAR* string) {
 
 	return string;
 }
-
 
 void RemoveNovaLinha(TCHAR* str) {
 	size_t len = _tcslen(str);
@@ -48,7 +50,6 @@ TCHAR** splitString(TCHAR* str, const TCHAR* delim, unsigned int* size) {
 
     return returnArray;
 }
-
 
 BOOL getValueFromKeyMAXLETRAS(unsigned int* maxLetras) {
 	LSTATUS res;
