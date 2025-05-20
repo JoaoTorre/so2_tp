@@ -1,8 +1,6 @@
 ﻿  main.c
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(98,22): warning C4101: 'comandos': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(168,11): warning C4101: 'username': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(167,11): warning C4101: 'Resposta_Login': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(165,11): warning C4101: 'n': variável local não referenciada
-  utils.c
-  Gerando Código...
-  jogoui.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(106,22): warning C4101: 'comandos': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(176,11): warning C4101: 'username': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(175,11): warning C4101: 'Resposta_Login': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(173,11): warning C4101: 'n': variável local não referenciada
+  jogoui.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe

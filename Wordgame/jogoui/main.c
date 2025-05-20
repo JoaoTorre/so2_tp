@@ -80,9 +80,17 @@ int verfica_comandos(DadosPartilhados* dadosPartilhados) {
         WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
         *dadosPartilhados->Continua = FALSE;
         return FALSE;
+    }else if (comando[0] == _T(':')) {
+        _tprintf(_T("Comando inválido: %s\n"), comando);
+        return TRUE; 
     }
     else {
-        _tprintf(_T("\n[JOGOUI] - Comando invalido (%s)\n"), comando);
+        WaitForSingleObject(hMutex, INFINITE);
+        wcscpy_s(comandos_jogador->comando, _countof(comandos_jogador->comando),comando);
+        comandos_jogador->tipo_comando = 5;
+        ReleaseMutex(hMutex);
+        WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
+        _tprintf(_T("Palavra enviada: %s\n"), comando);
         return TRUE;
     }
 }

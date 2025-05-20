@@ -261,8 +261,12 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
              CloseHandle(pipe);
              continua = FALSE;
             break;
-        case 5: // recebe palavra
+        case 5: //RECEBE PALAVRA
+
             _tprintf(_T("[ARBITRO] - Palvra recebida: %ls"), comandos.comando);
+            break;
+
+            /*
             // fazer verificação da palavra
 			TCHAR* leitura = comandos.comando; // perigo corrigir
 
@@ -304,8 +308,9 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                     novaLetra(letrasAtuais, alfabeto, vogais);
                     params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
                 }
-
-            }
+                */
+               
+            
         default:
             _tprintf(TEXT("[ARBITRO] - Comando desconhecido: %d\n"), comandos.tipo_comando);
             continua = FALSE;
