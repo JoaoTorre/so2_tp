@@ -1,14 +1,19 @@
 ﻿  main.c
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(26,9): warning C4013: 'RemoveNovaLinha' indefinido; assumindo extern retornando int
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(130,13): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(26,9): warning C4013: 'RemoveNovaLinha' indefinido; assumindo extern retornando int
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(135,13): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(142,23): warning C4018: '<': incompatibilidade de signed/unsigned
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(288,81): warning C4244: '-=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(301,65): warning C4047: 'função': 'TCHAR **' difere em níveis de indireção de 'TCHAR *'
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(301,65): warning C4024: 'VerificaPalavra': tipos diferentes para parâmetro formal e real 2
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(311,89): warning C4244: '-=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(318,85): warning C4244: '-=': conversão de 'double' para 'float', possível perda de dados
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(292,23): warning C4101: 'letrasAtuaisCopyNewLetter': variável local não referenciada
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(338,11): warning C4101: 'nomeFicheiro': variável local não referenciada
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(485,24): warning C4047: '=': 'TCHAR *' difere em níveis de indireção de 'const TCHAR **'
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(504,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(515,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(526,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\arbitro\main.c(404,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
   utils.c
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(137,23): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(158,43): warning C4090: 'função': diferentes qualificadores 'const'
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(158,59): warning C4090: 'função': diferentes qualificadores 'const'
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(328,11): warning C4101: 'nomeFicheiro': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(454,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(465,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(476,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(394,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
   Gerando Código...
-  arbitro.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe
+  arbitro.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe

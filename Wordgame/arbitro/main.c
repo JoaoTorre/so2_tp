@@ -81,6 +81,11 @@ BOOLEAN VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION 
 }
 
 BOOLEAN VerificaPalavra(TCHAR leitura[12], TCHAR* dicionario[]) {
+    if (leitura == NULL || dicionario == NULL){
+        _tprintf(_T("ERRO: dicionario ou leitura é NULL!\n"));
+        return FALSE;
+    }
+
     for (int i = 0; dicionario[i] != NULL; i++) {  
         if (_tcscmp(leitura, dicionario[i]) == 0) {
             return TRUE;  
@@ -150,14 +155,18 @@ VOID ShowActualLetters(TCHAR* letrasAtuais) {
 }
 
 DWORD WINAPI ThreadNewLetter(LPVOID param) {
-    td_dataNewLetter* data = (td_dataNewLetter*)param;
+	ThreadNewLet* data = (ThreadNewLet*)param;
+    EnterCriticalSection(&data->config->csConfig);
+	int ritmo = data->config->ritmo;
+    LeaveCriticalSection(&data->config->csConfig);
 
     while (data->continuar) {
-        Sleep(data->ritmo * 1000); 
-        EnterCriticalSection(&data->cs);
-        novaLetra(data->letrasAtuais, data->alfabeto, data->vogais, data->max_letras);
-        ShowActualLetters(data->letrasAtuais);
-        LeaveCriticalSection(&data->cs);
+        Sleep(ritmo * 1000); 
+        EnterCriticalSection(&data->letters->cs);
+        novaLetra(data->letters->letrasAtuais, data->alfabeto, data->vogais, data->config->max_letras);
+        ShowActualLetters(data->letters->letrasAtuais);
+        LeaveCriticalSection(&data->letters->cs);
+        LeaveCriticalSection(&data->config->csConfig);
     }
 
     return 0;
@@ -201,16 +210,16 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
                 // "NACEITE"
                 TCHAR msg[] = _T("NACEITE");
-                header.tipo = 99; 
+                header.tipo = 99;
                 header.tamanho = sizeof(msg);
                 WriteFile(pipe, &header, sizeof(header), &n, NULL);
                 WriteFile(pipe, msg, sizeof(msg), &n, NULL);
                 continua = FALSE;
-                
-            }       
+
+            }
             else { // "ACEITE"
                 TCHAR msg[] = _T("ACEITE");
-                header.tipo = 98; 
+                header.tipo = 98;
                 header.tamanho = sizeof(msg);
                 WriteFile(pipe, &header, sizeof(header), &n, NULL);
                 WriteFile(pipe, msg, sizeof(msg), &n, NULL);
@@ -238,7 +247,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             header.tamanho = sizeof(EnviaDados);
             WriteFile(pipe, &header, sizeof(header), &n, NULL);
 
-            
+
             for (int i = 0; i < params->dados->nJogadores; i++) {
                 if (params->dados->hPipes[i].activo) {
                     dadosParaEnviar.jogadores[dadosParaEnviar.nJogadoresativos] = params->dados->jogadores[i];
@@ -255,20 +264,18 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
         case 4: // JOGADOR SAIU
             _tprintf(TEXT("[ARBITRO] - Jogador saiu: %s\n"), jogador.username);
-             params->dados->hPipes[params->jogadorIndex].activo = FALSE;
-             FlushFileBuffers(pipe);
-             DisconnectNamedPipe(pipe);
-             CloseHandle(pipe);
-             continua = FALSE;
+            params->dados->hPipes[params->jogadorIndex].activo = FALSE;
+            FlushFileBuffers(pipe);
+            DisconnectNamedPipe(pipe);
+            CloseHandle(pipe);
+            continua = FALSE;
             break;
         case 5: //RECEBE PALAVRA
 
-            _tprintf(_T("[ARBITRO] - Palvra recebida: %ls"), comandos.comando);
-            break;
+            _tprintf(_T("[ARBITRO] - Palvra recebida: %ls\n"), comandos.comando);
 
-            /*
             // fazer verificação da palavra
-			TCHAR* leitura = comandos.comando; // perigo corrigir
+            TCHAR* leitura = comandos.comando; // perigo corrigir
 
             size_t len = _tcslen(leitura);
             if (len > 0 && leitura[len - 1] == _T('\n')) {
@@ -278,22 +285,24 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
 
             if (1 > len && len > MAXIMO_LETRAS) { // corrigir
                 _tprintf_s(_T("Palavra muito longa! Tente novamente.\n"));
-				params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
+                params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
             }
             else {
                 TCHAR letrasAtuaisCopyVerificacao[13];
                 TCHAR letrasAtuaisCopyNewLetter[13];
 
                 // Cria uma copia do array de letras disponiveis
-                _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), letrasAtuais, _tcslen(letrasAtuais));
-                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao)) {
+                EnterCriticalSection(&params->letters->cs);
+                _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), params->letters->letrasAtuais, _tcslen(params->letters->letrasAtuais));
+                LeaveCriticalSection(&params->letters->cs);
+                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
                     _tprintf_s(_T("DEBUG - Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
-
-                    if (VerificaPalavra(leitura, dicionario)) {
+                    EnterCriticalSection(&params->letters->cs);
+                    if (VerificaPalavra(leitura, params->letters->dicionario)) {
                         // dar os pontos ao jogador e atualizar letras disponiveis
                         _tprintf_s(_T("Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
                         OrdenarArray(letrasAtuaisCopyVerificacao);
-                        _tcsncpy_s(letrasAtuais, MAX_TAM_LETRAS + 1, letrasAtuaisCopyVerificacao, MAX_TAM_LETRAS + 1);
+                        _tcsncpy_s(params->letters->letrasAtuais, params->dados->config->max_letras + 1, letrasAtuaisCopyVerificacao, params->dados->config->max_letras + 1);
                         params->dados->jogadores[params->jogadorIndex].pontuacao += len;
                     }
                     else {
@@ -301,25 +310,26 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                         _tprintf_s(_T("Palavra não encontrada! Tente novamente.\n"));
                         params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
                     }
+                    LeaveCriticalSection(&params->letters->cs);
                 }
                 else {
                     // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
                     _tprintf_s(_T("Letras erradas! Tente novamente.\n"));
-                    novaLetra(letrasAtuais, alfabeto, vogais);
                     params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
                 }
-                */
-               
-            
+            }
+            break;
+
         default:
             _tprintf(TEXT("[ARBITRO] - Comando desconhecido: %d\n"), comandos.tipo_comando);
             continua = FALSE;
             break;
+            
         }
-
     } while (continua);
 
     return 0;
+   
 }
 
 DWORD WINAPI threadInterface(LPVOID param) {
@@ -359,22 +369,22 @@ DWORD WINAPI threadInterface(LPVOID param) {
 
                 }
                 else if (_tcscmp(comandoArray[0], _T("acelerar")) == 0) {
-					WaitForSingleObject(dados->hMutex, INFINITE);
-                    if (dados->config.ritmo > 1) {
-                        dados->config.ritmo--;
-                        _tprintf(_T("\nRitmo -> %d\n"), dados->config.ritmo);
+					EnterCriticalSection(&dados->config->csConfig);
+                    if (dados->config->ritmo > 1) {
+                        dados->config->ritmo--;
+                        _tprintf(_T("\nRitmo -> %d\n"), dados->config->ritmo);
                     }
                     else {
-						dados->config.ritmo = 1;
-                        _tprintf(_T("\nRitmo -> %d (Máximo ritmo)\n"), dados->config.ritmo);
+						dados->config->ritmo = 1;
+                        _tprintf(_T("\nRitmo -> %d (Máximo ritmo)\n"), dados->config->ritmo);
                     }
-					ReleaseMutex(dados->hMutex);
+                    LeaveCriticalSection(&dados->config->csConfig);
                 }
                 else if (_tcscmp(comandoArray[0], _T("travar")) == 0) {
-					WaitForSingleObject(dados->hMutex, INFINITE);
-					dados->config.ritmo++;
-					ReleaseMutex(dados->hMutex);
-                    _tprintf(_T("\nRitmo -> %d\n"), dados->config.ritmo);
+					EnterCriticalSection(&dados->config->csConfig);
+					dados->config->ritmo++;
+                    LeaveCriticalSection(&dados->config->csConfig);
+                    _tprintf(_T("\nRitmo -> %d\n"), dados->config->ritmo);
                 }
                 else if (_tcscmp(comandoArray[0], _T("encerrar")) == 0) {
                     _tprintf(_T("\nEncerrar\n"));
@@ -391,13 +401,15 @@ DWORD WINAPI threadInterface(LPVOID param) {
 }
 
 int _tmain(int argc, TCHAR* argv[]) {
-    HANDLE hSemaphoreArbitro, hSemaphoreMaxClientes, hEventTemp, hPipe, hThreadInterface;
+    HANDLE hSemaphoreArbitro, hSemaphoreMaxClientes, hEventTemp, hPipe, hThreadInterface, hThreadNewLetter;
     HANDLE* hThreads;
     ThreadDados dados;
     MEMDATA memdata;
     DWORD offset, nBytes;
     int i;
-
+	Letters letters;
+    ConfigJogo dadosConfig;
+	ThreadNewLet threadNewLet;
 
 #ifdef UNICODE 
 	_setmode(_fileno(stdin), _O_WTEXT);
@@ -415,32 +427,70 @@ int _tmain(int argc, TCHAR* argv[]) {
 	if (GetLastError() == ERROR_ALREADY_EXISTS) {
 		_ftprintf(stderr, _T("[ERRO] - Já existe um Árbitro a decorrer"));
         return -1;
-	}
+	}    	
 
     /*---- VALORES REGISTRY ----*/
-    if (!getValueFromKeyMAXLETRAS(&dados.config.max_letras)) {
+    InitializeCriticalSection(&dadosConfig.csConfig);
+
+    if (!getValueFromKeyMAXLETRAS(&dadosConfig.max_letras)) {
         _ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de MAXLETRAS"));
-        dados.config.max_letras = DEFAULT_MAXLETRAS;
+        dadosConfig.max_letras = DEFAULT_MAXLETRAS;
         // guardar numa key o valor default
 		setValueToKeyMAXLETRAS(DEFAULT_MAXLETRAS);
     }
-    else if (dados.config.max_letras > MAXIMO_LETRAS) {
+    else if (dadosConfig.max_letras > MAXIMO_LETRAS) {
 		_ftprintf(stderr, _T("[ERRO] - O valor de MAXLETRAS não pode ser superior a %d"), MAXIMO_LETRAS);
-        dados.config.max_letras = MAXIMO_LETRAS;
+        dadosConfig.max_letras = MAXIMO_LETRAS;
 		setValueToKeyMAXLETRAS(MAXIMO_LETRAS);
     }
 
-    if (!getValueFromKeyRITMO(&dados.config.ritmo)) {
+    if (!getValueFromKeyRITMO(&dadosConfig.ritmo)) {
 		_ftprintf(stderr, _T("[ERRO] - Não foi possível obter o valor de RITMO"));
-        dados.config.ritmo = DEFAULT_RITMO;
+        dadosConfig.ritmo = DEFAULT_RITMO;
 		setValueToKeyRITMO(DEFAULT_RITMO);
-    }else if(dados.config.ritmo < 1){
+    }else if(dadosConfig.ritmo < 1){
 		_ftprintf(stderr, _T("[ERRO] - O valor de RITMO não pode ser inferior a 1"));
-        dados.config.ritmo = DEFAULT_RITMO;
+        dadosConfig.ritmo = DEFAULT_RITMO;
 		setValueToKeyRITMO(DEFAULT_RITMO);
 	}
-
     dados.nJogadores = 0;
+
+    // Preencher estrutura para letras
+    TCHAR buffer[12] = _T("eu");
+    letters.letrasAtuais = buffer;
+    const TCHAR* dicionario[] = {
+    _T("abacate"), _T("abelha"), _T("acaso"), _T("adeus"), _T("agora"),
+    _T("alegria"), _T("amado"), _T("amigo"), _T("andar"), _T("anjo"),
+    _T("antes"), _T("arroz"), _T("astro"), _T("aviao"), _T("azul"),
+    _T("baixo"), _T("balde"), _T("beijo"), _T("bicho"), _T("bola"),
+    _T("bonito"), _T("brisa"), _T("cabra"), _T("caminho"), _T("carta"),
+    _T("casal"), _T("casar"), _T("caso"), _T("caverna"), _T("cedo"),
+    _T("chuva"), _T("claro"), _T("cobra"), _T("cor"), _T("cores"),
+    _T("corpo"), _T("correr"), _T("costa"), _T("dado"), _T("dente"),
+    _T("depois"), _T("deusa"), _T("dizer"), _T("dobra"), _T("doce"),
+    _T("dor"), _T("duro"), _T("eco"), _T("eles"), _T("estar"),
+    _T("etapa"), _T("exato"), _T("fada"), _T("falar"), _T("falta"),
+    _T("fama"), _T("fazer"), _T("ferir"), _T("festa"), _T("fiel"),
+    _T("fogo"), _T("folha"), _T("forca"), _T("fraco"), _T("fruta"),
+    _T("fundo"), _T("garra"), _T("gato"), _T("gelo"), _T("gerar"),
+    _T("girar"), _T("grito"), _T("honra"), _T("hora"), _T("homem"),
+    _T("ideia"), _T("igual"), _T("ilha"), _T("inverno"), _T("irmao"),
+    _T("jogar"), _T("junto"), _T("lento"), _T("livro"), _T("lobo"),
+    _T("luz"), _T("mago"), _T("mamae"), _T("matar"), _T("mel"),
+    _T("mundo"), _T("musica"), _T("nascer"), _T("neve"), _T("nuvem"),
+    _T("novo"), _T("olhar"), _T("onda"), _T("ouro"), _T("paz"),
+    _T("pente"), _T("plano"), _T("poder"), _T("praia"), _T("preto"),
+    _T("rato"), _T("rosto"), _T("rua"), _T("saber"), _T("salto"),
+       _T("eu"), _T("ar"), _T("ele"), _T("ela"), _T("nos"), _T("lei"), NULL};
+    letters.dicionario = dicionario;
+    InitializeCriticalSection(&letters.cs);
+
+    // Preencher estrutura para Thread que gera novas letras
+    threadNewLet.alfabeto = _T("abcdefghijlmnopqrstuvxz");
+    threadNewLet.vogais = _T("aeiou");
+    threadNewLet.continuar = TRUE;
+    threadNewLet.config = &dadosConfig;
+	threadNewLet.letters = &letters;
 
     /*----MEMÓRIA COMPARTILHADA----*/
 
@@ -483,6 +533,7 @@ int _tmain(int argc, TCHAR* argv[]) {
          return -1;
      }
 
+
      /*        PIPES           */
 
      dados.hPipes = malloc(DEFAULT_MAX_JOGADORES * sizeof(DadosPipe)); // Aloca memória para os arrays hPipes
@@ -490,8 +541,7 @@ int _tmain(int argc, TCHAR* argv[]) {
      hThreads = malloc(DEFAULT_MAX_JOGADORES * sizeof(HANDLE)); // Aloca memória para os arrays hThreads
      dados.JogadorIndex = 0; //Índice de Cliente no Array hPipes
      dados.terminar = 0; //Flag como sinal de  terminar
-   
-
+     dados.config = &dadosConfig;
 
      /*           Criação de Mutex              */
      dados.hMutex = CreateMutex(NULL, FALSE, NULL);
@@ -569,6 +619,8 @@ int _tmain(int argc, TCHAR* argv[]) {
          return -1;
      }
 
+     // criar thread nova letra
+	 hThreadNewLetter = CreateThread(NULL, 0, ThreadNewLetter, &threadNewLet, 0, NULL);
 
      _tprintf(TEXT("[ARBITRO] - Esperar ligacão de um Jogador/Bot...\n"));
      while (!dados.terminar && dados.nJogadores < DEFAULT_MAX_JOGADORES) {
@@ -587,7 +639,9 @@ int _tmain(int argc, TCHAR* argv[]) {
 
                  ThreadParams* params = malloc(sizeof(ThreadParams));
                  params->jogadorIndex = i;
-                 params->dados = &dados; 
+                 params->dados = &dados;
+                 params->letters = &letters;
+                 
 
                  // Criar a thread
                  hThreads[dados.nJogadores] = CreateThread(NULL, 0, threadTrataCliente, params, 0, NULL);
@@ -619,12 +673,15 @@ int _tmain(int argc, TCHAR* argv[]) {
          CloseHandle(dados.hPipes[i].hInstancia);
      }
 
+	 DeleteCriticalSection(&letters.cs);
+	 DeleteCriticalSection(&dadosConfig.csConfig);
+
      free(dados.hPipes);
      free(dados.hEvents);
      free(hThreads);
 
      CloseHandle(hThreadInterface);
-     CloseHandle(hSemaphoreArbitro);    // Liberta semáforo
+     CloseHandle(hSemaphoreArbitro);  // Liberta semáforo
      CloseHandle(memdata.hMapFile);   // Liberta memória compartilhada 
      CloseHandle(memdata.hEvent);     // Liberta Evento
      CloseHandle(memdata.hMutex);     // Liberta mutex

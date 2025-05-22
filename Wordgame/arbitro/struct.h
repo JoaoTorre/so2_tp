@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
 	int max_letras;
 	int ritmo;
+	CRITICAL_SECTION csConfig;
 } ConfigJogo;
 
 typedef struct {
@@ -47,14 +48,28 @@ typedef struct {
 	int nJogadores;
 	int JogadorIndex;
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
-	ConfigJogo config;
+	ConfigJogo* config;
 }ThreadDados;
+
+typedef struct {
+	TCHAR* letrasAtuais;
+	TCHAR* dicionario;
+	CRITICAL_SECTION cs; 
+} Letters;
+
+typedef struct {
+	TCHAR* alfabeto;
+	TCHAR* vogais;
+	BOOLEAN continuar;
+	ConfigJogo* config;
+	Letters* letters;
+} ThreadNewLet;
 
 typedef struct {
 	int jogadorIndex;
 	ThreadDados* dados;
+	Letters* letters;
 } ThreadParams;
-
 
 typedef struct {
 	DWORD tipo;
@@ -66,15 +81,7 @@ typedef struct {
 	int nJogadoresativos;
 }EnviaDados;
 
-typedef struct {
-	TCHAR* letrasAtuais;
-	const TCHAR* alfabeto;
-	const TCHAR* vogais;
-	BOOLEAN continuar;
-	CRITICAL_SECTION cs;
-	unsigned int ritmo;
-	unsigned int max_letras;
-} td_dataNewLetter;
+
 
 
 #endif
