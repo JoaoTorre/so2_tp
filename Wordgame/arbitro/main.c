@@ -272,6 +272,10 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             break;
         case 5: //RECEBE PALAVRA
 
+            header.tipo = 4;
+            header.tamanho = sizeof(_T("PRECEBIDA"));
+            WriteFile(pipe, &header, sizeof(header), &n, NULL);
+
             _tprintf(_T("[ARBITRO] - Palvra recebida: %ls\n"), comandos.comando);
 
             // fazer verificação da palavra

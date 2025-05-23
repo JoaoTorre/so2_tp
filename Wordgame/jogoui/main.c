@@ -84,13 +84,17 @@ int verfica_comandos(DadosPartilhados* dadosPartilhados) {
         _tprintf(_T("Comando inválido: %s\n"), comando);
         return TRUE; 
     }
-    else {
+    else if (_tcslen(comando) > 1) {
+        ResetEvent(dadosPartilhados->hEventoAvancar);
+        SetEvent(dadosPartilhados->hEventoParar);
         WaitForSingleObject(hMutex, INFINITE);
-        wcscpy_s(comandos_jogador->comando, _countof(comandos_jogador->comando),comando);
+        wcscpy_s(comandos_jogador->comando, _countof(comandos_jogador->comando), comando);
         comandos_jogador->tipo_comando = 5;
         ReleaseMutex(hMutex);
         WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
-        _tprintf(_T("Palavra enviada: %s\n"), comando);
+        _tprintf(TEXT("Palavra Enviada : %s\n"), comando);
+        ResetEvent(dadosPartilhados->hEventoParar);
+        SetEvent(dadosPartilhados->hEventoAvancar);
         return TRUE;
     }
 }
