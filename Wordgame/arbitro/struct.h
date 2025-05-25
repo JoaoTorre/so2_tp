@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
 	TCHAR username[MAX];
 	float pontuacao;
+	TCHAR* palavra;
 	BOOL ativo;
 }Jogador;
 
@@ -47,6 +48,7 @@ typedef struct {
 	int terminar;
 	int nJogadores;
 	int JogadorIndex;
+	int * JogadorIndexLider;
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
 	ConfigJogo* config;
 }ThreadDados;

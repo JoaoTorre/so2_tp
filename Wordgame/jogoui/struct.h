@@ -9,6 +9,7 @@
 typedef struct {
 	TCHAR username[MAX];
 	float pontuacao;
+	TCHAR* palavra;
 	BOOL ativo;
 }Jogador;
 

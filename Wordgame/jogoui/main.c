@@ -108,6 +108,7 @@ DWORD WINAPI threadArbitro(LPVOID param) {
     DadosPartilhados* dadosPartilhados;  
     dadosPartilhados= dados->dadosPartilhados;
     Comandos_Jogador comandos;
+    TCHAR resposta[255];
 
     if (!loginEnviado) {
         WaitForSingleObject(*dados->dadosPartilhados->hMutex, INFINITE);
@@ -125,20 +126,31 @@ DWORD WINAPI threadArbitro(LPVOID param) {
         if (ret == WAIT_OBJECT_0) {
             BOOL ret = ReadFile(*dados->dadosPartilhados->hPipe, dados->header, sizeof(MensagemHeader), &n, NULL);
                 if (!ret) {
-                    continue;
+                    DWORD error = GetLastError();
+                    switch (error) {
+                    case ERROR_BROKEN_PIPE:
+                        _tprintf(TEXT("[JOGOUI] - O jogo foi encerrado"));
+                        *dados->Continua = FALSE;
+                        break;
+                    case ERROR_PIPE_NOT_CONNECTED:
+                        _tprintf(TEXT("[JOGOUI] - O jogo foi encerrado\n"));
+                        *dados->Continua = FALSE;
+                        break;
+                    default:
+                        continue;
+                        break;
+                    }    
                 }
       
             if (n == sizeof(MensagemHeader)) {
                 switch (dados->header->tipo) {
                 case 98: {
-                        TCHAR resposta[10];
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
                         _tprintf(TEXT("\nSessão iniciada com sucesso: %s\n"), resposta);
                         break;
                 }
                 case 99: {
-                        TCHAR resposta[10];
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
                         _tprintf(TEXT("\nJogador não aceite: %s\n"), resposta);
@@ -146,15 +158,55 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                         break;
                 }
                 case 40: {
-                        TCHAR resposta[10];
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
                         *dados->Continua = FALSE;
                         break;
                     }
 
+                case 50: {
+                    ReadFile(*dados->dadosPartilhados->hPipe,dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
+                    _tprintf(TEXT("\nO jogador %s saiu do jogo\n"), dados->dadosPartilhados->jogador->username);
+                    break;
                 }
 
+                case 60: {
+                    ReadFile(*dados->dadosPartilhados->hPipe,dados->dadosPartilhados->jogador,sizeof(Jogador), &n, NULL);
+                    _tprintf(TEXT("\nO jogador %s entrou no jogo\n"), dados->dadosPartilhados->jogador->username);
+                    break;
+                }
+
+
+                case 70: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
+                    dados->dadosPartilhados->jogador->palavra = malloc(dados->header->tamanho * sizeof(TCHAR));
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador->palavra, dados->header->tamanho * sizeof(TCHAR), &n, NULL);
+                    _tprintf(TEXT("\nO jogador %s acertou a palavra %s\n"), dados->dadosPartilhados->jogador->username, dados->dadosPartilhados->jogador->palavra);
+                    break;
+                }
+
+                case 80: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
+                    dados->dadosPartilhados->jogador->palavra = malloc(dados->header->tamanho * sizeof(TCHAR));
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador->palavra, dados->header->tamanho * sizeof(TCHAR), &n, NULL);
+                    _tprintf(TEXT("\nParabéns acertaste a palavra %s!\n"),dados->dadosPartilhados->jogador->palavra);
+                    break;
+                }
+
+                case 63: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
+                    _tprintf(TEXT("\nO jogador %s está em primeiro lugar, com pontuação %.2f\n"), dados->dadosPartilhados->jogador->username, dados->dadosPartilhados->jogador->pontuacao);
+                    break;
+                }
+
+                case 64: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
+                    _tprintf(TEXT("\nParabéns estás em primeiro lugar!\n"));
+                    break;
+                }
+
+                }
+              
             }
         }
         
