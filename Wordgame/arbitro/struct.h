@@ -19,7 +19,8 @@ typedef struct {
 }DadosPipe;
 
 typedef struct {
-	char letras_visiveis[MAX_VISIBLE_LETRAS];                   
+	TCHAR letras_visiveis[MAX_VISIBLE_LETRAS];
+	TCHAR palavra[100];
 } SHAREDMEM_LETRAS;
 
 typedef struct {
@@ -44,7 +45,7 @@ typedef struct {
 	DadosPipe* hPipes;
 	HANDLE* hEvents;
 	HANDLE hMutex;
-	MEMDATA memdata;
+	MEMDATA *memdata;
 	int terminar;
 	int nJogadores;
 	int JogadorIndex;
@@ -71,6 +72,7 @@ typedef struct {
 	int jogadorIndex;
 	ThreadDados* dados;
 	Letters* letters;
+	SHAREDMEM_LETRAS *pSharedData;
 } ThreadParams;
 
 typedef struct {
@@ -82,8 +84,4 @@ typedef struct {
 	Jogador* jogadores;
 	int nJogadoresativos;
 }EnviaDados;
-
-
-
-
 #endif

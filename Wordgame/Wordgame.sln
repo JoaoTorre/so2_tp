@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35506.116 d17.12
+VisualStudioVersion = 17.12.35506.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "arbitro", "arbitro\arbitro.vcxproj", "{056B88E8-5012-48E3-8C11-8FCB59660D0E}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jogoui", "jogoui\jogoui.vcxproj", "{89D395E4-3CDB-4A97-90BB-923CC0A34EF3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bot", "bot\bot.vcxproj", "{C6A22849-AD0E-4310-92E7-B8FB685C465C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "painel", "painel\painel.vcxproj", "{B226312A-D47C-4D4D-9559-366DF577A7A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,14 @@ Global
 		{C6A22849-AD0E-4310-92E7-B8FB685C465C}.Release|x64.Build.0 = Release|x64
 		{C6A22849-AD0E-4310-92E7-B8FB685C465C}.Release|x86.ActiveCfg = Release|Win32
 		{C6A22849-AD0E-4310-92E7-B8FB685C465C}.Release|x86.Build.0 = Release|Win32
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Debug|x64.ActiveCfg = Debug|x64
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Debug|x64.Build.0 = Debug|x64
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Debug|x86.ActiveCfg = Debug|Win32
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Debug|x86.Build.0 = Debug|Win32
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Release|x64.ActiveCfg = Release|x64
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Release|x64.Build.0 = Release|x64
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Release|x86.ActiveCfg = Release|Win32
+		{B226312A-D47C-4D4D-9559-366DF577A7A6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

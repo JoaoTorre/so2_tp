@@ -63,31 +63,31 @@ void AvisarJogadores(ThreadDados* threadData, Jogador jogador, TCHAR* tipo, HAND
                  }
              }
 
-            if (_tcscmp(tipo, _T("SAIU")) == 0) {
-                    TCHAR msg[] = _T("SAIU");
-                    header.tipo = 50;
-                    header.tamanho = sizeof(msg);
+                if (_tcscmp(tipo, _T("SAIU")) == 0) {
+                        TCHAR msg[] = _T("SAIU");
+                        header.tipo = 50;
+                        header.tamanho = sizeof(msg);
+
+                        WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
+                        WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
+                }   
+
+
+                if (_tcscmp(tipo, _T("ACERTOU")) == 0) {
+                    if (threadData->hPipes[i].hInstancia != hpipe) {
+                        TCHAR msg[] = _T("ACERTOU");
+                        header.tipo = 70;
+                        header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;  
+                    }
+                    else {
+                        TCHAR msg[] = _T("ACERTOU");
+                        header.tipo = 80;
+                        header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;
+                    }
 
                     WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
                     WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
-            }   
-
-
-            if (_tcscmp(tipo, _T("ACERTOU")) == 0) {
-                if (threadData->hPipes[i].hInstancia != hpipe) {
-                    TCHAR msg[] = _T("ACERTOU");
-                    header.tipo = 70;
-                    header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;  
-                }
-                else {
-                    TCHAR msg[] = _T("ACERTOU");
-                    header.tipo = 80;
-                    header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;
-                }
-
-                WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
-                WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
-                WriteFile(threadData->hPipes[i].hInstancia, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
+                    WriteFile(threadData->hPipes[i].hInstancia, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
             }
 
 
@@ -425,6 +425,12 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                          if (VerificaNovoLider(params->dados)) {
                              AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
                          }
+
+
+                         WaitForSingleObject(params->dados->memdata->hMutex, INFINITE);  
+                         _tcscpy_s(params->pSharedData->palavra,MAX_VISIBLE_LETRAS,leitura);
+                         ReleaseMutex(params->dados->memdata->hMutex);
+                         SetEvent(params->dados->memdata->hEvent);
                     }
                     else {
                         // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
@@ -664,6 +670,20 @@ int _tmain(int argc, TCHAR* argv[]) {
      }
 
 
+     SHAREDMEM_LETRAS* pSharedData = (SHAREDMEM_LETRAS*)MapViewOfFile(
+         memdata.hMapFile,
+         FILE_MAP_WRITE, 
+         0,
+         0,
+         sizeof(SHAREDMEM_LETRAS));
+
+     if (pSharedData == NULL) {
+         _tprintf_s(_T("[ERRO] - Não foi possível mapear visão da memória compartilhada (%d).\n"), GetLastError());
+         CloseHandle(memdata.hMapFile);
+         return -1;
+     }
+
+
      /*        PIPES           */
 
      dados.hPipes = malloc(DEFAULT_MAX_JOGADORES * sizeof(DadosPipe)); // Aloca memória para os arrays hPipes
@@ -672,6 +692,7 @@ int _tmain(int argc, TCHAR* argv[]) {
      dados.JogadorIndex = 0; //Índice de Cliente no Array hPipes
      dados.terminar = 0; //Flag como sinal de  terminar
      dados.config = &dadosConfig;
+     dados.memdata = &memdata;
 
      /*           Criação de Mutex              */
      dados.hMutex = CreateMutex(NULL, FALSE, NULL);
@@ -698,8 +719,6 @@ int _tmain(int argc, TCHAR* argv[]) {
              CloseHandle(dados.hMutex);
              exit(-1);
          }
-
-
 
 
          /*         Criação de PIPES              */
@@ -775,7 +794,7 @@ int _tmain(int argc, TCHAR* argv[]) {
                  params->jogadorIndex = i;
                  params->dados = &dados;
                  params->letters = &letters;
-                 
+                 params->pSharedData = pSharedData;
 
                  // Criar a thread
                  hThreads[dados.nJogadores] = CreateThread(NULL, 0, threadTrataCliente, params, 0, NULL);

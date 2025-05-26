@@ -297,6 +297,7 @@ int _tmain(int argc, LPTSTR argv[]) {
     threadescuta.dadosPartilhados = &dadosPartilhados;
 
 
+
     ThreadArbitro = CreateThread(NULL, 0, threadArbitro, &threadescuta, 0, NULL);
     if (ThreadArbitro == NULL) {
         _tprintf(TEXT("[ERRO] - Criar ThreadInterface! (CreateThread)\n"));
