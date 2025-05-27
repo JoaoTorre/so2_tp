@@ -628,7 +628,7 @@ int _tmain(int argc, TCHAR* argv[]) {
 		setValueToKeyRITMO(DEFAULT_RITMO);
 	}
     dados.nJogadores = 0;
-    dadosConfig.ritmo = 10;
+
     // Preencher estrutura para letras
     TCHAR buffer[12] = _T("eu");
     letters.letrasAtuais = buffer;
