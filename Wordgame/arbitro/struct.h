@@ -66,6 +66,8 @@ typedef struct {
 	BOOLEAN continuar;
 	ConfigJogo* config;
 	Letters* letters;
+	MEMDATA* memdata;
+	SHAREDMEM_LETRAS* pSharedData;
 } ThreadNewLet;
 
 typedef struct {

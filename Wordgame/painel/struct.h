@@ -3,9 +3,6 @@
 
 #include <windows.h>
 #include <tchar.h>
-#include "framework.h"
-#include "painel.h"
-#include <windows.h>
 #include <tchar.h>
 #include <fcntl.h>
 #include <io.h>
@@ -24,7 +21,7 @@ typedef struct {
 
 typedef struct {
 	SHAREDMEM_LETRAS* pSharedData;
-	HANDLE *hEvent;
+	HANDLE* hEvent;
 	HWND hWnd;
 } SHARED_THREAD;
 

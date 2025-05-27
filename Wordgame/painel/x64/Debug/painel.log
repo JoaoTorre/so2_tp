@@ -1,4 +1,4 @@
-﻿  painel.cpp
-C:\Users\nunom\source\repos\so2_tp\Wordgame\painel\painel.cpp(147,58): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\painel\painel.cpp(153,70): warning C4129: "F": sequência de escape de caracteres não reconhecida
+﻿  main.c
+C:\Users\nunom\source\repos\so2_tp\Wordgame\painel\main.c(85,58): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\painel\main.c(91,70): warning C4129: "F": sequência de escape de caracteres não reconhecida
   painel.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\painel.exe

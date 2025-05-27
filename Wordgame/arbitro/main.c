@@ -240,11 +240,17 @@ VOID novaLetra(TCHAR* letrasAtuais, TCHAR alfabeto[], TCHAR vogais[], unsigned i
     letrasAtuais[maxLetras - 1] = letraNova;
 }
 
-VOID ShowActualLetters(TCHAR* letrasAtuais) {
-    // mostra o array de letras atuais
-   _tprintf_s(_T("\nLetras atuais: "));
 
-   
+
+void atualizarLetrasDaMemoriaPartilhada(ThreadNewLet* data) {
+     WaitForSingleObject(data->memdata->hMutex, INFINITE);
+     _tcscpy_s(data->pSharedData->letras_visiveis, MAX_VISIBLE_LETRAS, data->letters->letrasAtuais);
+     ReleaseMutex(data->memdata->hMutex);
+     SetEvent(data->memdata->hEvent);
+}
+
+void ShowActualLetters(TCHAR* letrasAtuais) {
+   _tprintf_s(_T("\nLetras atuais: ")); 
 
     for (int i = 0; i < (int)_tcslen(letrasAtuais); i++) {
         _tprintf(_T("%c "), letrasAtuais[i]);
@@ -262,6 +268,7 @@ DWORD WINAPI ThreadNewLetter(LPVOID param) {
         Sleep(ritmo * 1000); 
         EnterCriticalSection(&data->letters->cs);
         novaLetra(data->letters->letrasAtuais, data->alfabeto, data->vogais, data->config->max_letras);
+        atualizarLetrasDaMemoriaPartilhada(data);
         ShowActualLetters(data->letters->letrasAtuais);
         LeaveCriticalSection(&data->letters->cs);
         LeaveCriticalSection(&data->config->csConfig);
@@ -621,12 +628,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     letters.dicionario = dicionario;
     InitializeCriticalSection(&letters.cs);
 
-    // Preencher estrutura para Thread que gera novas letras
-    threadNewLet.alfabeto = _T("abcdefghijlmnopqrstuvxz");
-    threadNewLet.vogais = _T("aeiou");
-    threadNewLet.continuar = TRUE;
-    threadNewLet.config = &dadosConfig;
-	threadNewLet.letters = &letters;
+    
 
     /*----MEMÓRIA COMPARTILHADA----*/
 
@@ -771,6 +773,15 @@ int _tmain(int argc, TCHAR* argv[]) {
          CloseHandle(dados.hMutex);
          return -1;
      }
+
+     // Preencher estrutura para Thread que gera novas letras
+     threadNewLet.alfabeto = _T("abcdefghijlmnopqrstuvxz");
+     threadNewLet.vogais = _T("aeiou");
+     threadNewLet.continuar = TRUE;
+     threadNewLet.config = &dadosConfig;
+     threadNewLet.letters = &letters;
+     threadNewLet.memdata = &memdata;
+     threadNewLet.pSharedData = pSharedData;
 
      // criar thread nova letra
 	 hThreadNewLetter = CreateThread(NULL, 0, ThreadNewLetter, &threadNewLet, 0, NULL);

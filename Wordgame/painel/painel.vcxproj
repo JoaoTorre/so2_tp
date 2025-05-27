@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{b226312a-d47c-4d4d-9559-366df577a7a6}</ProjectGuid>
+    <ProjectGuid>{6380ad0a-0ae3-4161-981c-4aea06cfcd67}</ProjectGuid>
     <RootNamespace>painel</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
@@ -127,21 +127,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h" />
-    <ClInclude Include="painel.h" />
-    <ClInclude Include="Resource.h" />
+    <ClCompile Include="main.c" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="struct.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="painel.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="painel.rc" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="painel.ico" />
-    <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
