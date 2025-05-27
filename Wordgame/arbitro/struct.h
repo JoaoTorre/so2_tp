@@ -1,3 +1,4 @@
+#pragma once
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
@@ -33,6 +34,7 @@ typedef struct {
 	float pontuacao;
 	TCHAR* palavra;
 	BOOL ativo;
+	BOOL bot;
 }Jogador;
 
 typedef struct {
@@ -86,4 +88,5 @@ typedef struct {
 	Jogador* jogadores;
 	int nJogadoresativos;
 }EnviaDados;
-#endif
+
+#endif STRUCTS_H

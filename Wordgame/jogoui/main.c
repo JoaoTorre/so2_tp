@@ -2,7 +2,7 @@
 #include "struct.h"
 
 
-int verfica_comandos(DadosPartilhados* dadosPartilhados) {
+int verifica_comandos(DadosPartilhados* dadosPartilhados) {
     TCHAR comando[MAX];
     DWORD n;
     HANDLE* hPipe = dadosPartilhados->hPipe;
@@ -255,6 +255,7 @@ DWORD WINAPI EsperaMemData(LPVOID param){
 			for (int i = 0; i < (int)_tcslen(sharedDataCopy.letras_visiveis); i++) {
 				_tprintf(_T("%c "), sharedDataCopy.letras_visiveis[i]);
 			}
+            _tprintf(_T("\n"));
             
         }
         else if (dwWaitResult == WAIT_OBJECT_0 + 1) {
@@ -281,7 +282,7 @@ int _tmain(int argc, LPTSTR argv[]) {
     BOOL ret = FALSE;
     TCHAR Resposta_Login[MAX];
     TCHAR username[MAX];
-    HANDLE ThreadArbitro, threadMemData;
+    HANDLE ThreadArbitro, hThreadMemData;
     ThreadEscutaParam threadescuta;
     MensagemHeader header;
 	SHARED_THREAD sharedThread;
@@ -294,7 +295,7 @@ int _tmain(int argc, LPTSTR argv[]) {
 
     _tprintf_s(_T("Insira nome de utilizador: "));
     _fgetts(jogador.username, MAX, stdin);
-
+    jogador.bot = FALSE;
 
     while (1) {
         hPipe = CreateFile(
@@ -365,7 +366,15 @@ int _tmain(int argc, LPTSTR argv[]) {
 	sharedThread.continuar = TRUE;
 
 	// criar thread para esperar atualizações da memória partilhada
-	threadMemData = CreateThread(NULL, 0, EsperaMemData, &sharedThread, 0, NULL);
+    hThreadMemData = CreateThread(NULL, 0, EsperaMemData, &sharedThread, 0, NULL);
+    if (hThreadMemData == NULL) {
+        _tprintf(TEXT("[ERRO] - Criar ThreadMemData! (CreateThread)\n"));
+		CloseHandle(sharedThread.hMapFile);
+		CloseHandle(sharedThread.hEvent);
+		CloseHandle(sharedThread.hMutex);
+        CloseHandle(hPipe);
+        return -1;
+    }
 
     /*DADOS PARTILHADOS ENTRE THREAD PRINCIPAL E THREAD ESCUTA ARBITRO*/
     DadosPartilhados dadosPartilhados;
@@ -379,31 +388,35 @@ int _tmain(int argc, LPTSTR argv[]) {
     dadosPartilhados.Continua=&continua;
     
 
-
     /*DADOS PARTILHADOS ENTRE THREAD ESCUTA ARBITRO*/
     threadescuta.Continua = &continua;
     threadescuta.header = &header;
     threadescuta.dadosPartilhados = &dadosPartilhados;
 
-
-
     ThreadArbitro = CreateThread(NULL, 0, threadArbitro, &threadescuta, 0, NULL);
     if (ThreadArbitro == NULL) {
         _tprintf(TEXT("[ERRO] - Criar ThreadInterface! (CreateThread)\n"));
+        CloseHandle(sharedThread.hMapFile);
+        CloseHandle(sharedThread.hEvent);
+        CloseHandle(sharedThread.hMutex);
         CloseHandle(hPipe);
+        sharedThread.continuar = FALSE;
+        WaitForSingleObject(hThreadMemData, INFINITE);
+		CloseHandle(hThreadMemData);
         return -1;
     }
 
     do {
-        verfica_comandos(&dadosPartilhados);
+        verifica_comandos(&dadosPartilhados);
     } while (continua);
 
-  
+    
+	sharedThread.continuar = FALSE;
 
     WaitForSingleObject(ThreadArbitro, INFINITE);
     CloseHandle(ThreadArbitro);
-	WaitForSingleObject(threadMemData, INFINITE);
-	CloseHandle(threadMemData);
+	WaitForSingleObject(hThreadMemData, INFINITE);
+	CloseHandle(hThreadMemData);
     CloseHandle(sharedThread.hMapFile);
     CloseHandle(sharedThread.hEvent);
     CloseHandle(sharedThread.hMutex);

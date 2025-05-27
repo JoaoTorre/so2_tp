@@ -1,11 +1,10 @@
-#pragma once
+#pragma once 
 #ifndef STRUCTS_H
 #define STRUCTS_H
-#include <tchar.h>
-#include <stdlib.h>
-#include <Windows.h>
 
+#include <windows.h>
 
+#define MAX_VISIBLE_LETRAS 13
 #define MAX 255
 
 typedef struct {
@@ -18,8 +17,8 @@ typedef struct {
 
 
 typedef struct {
-	DWORD tipo;       
-	DWORD tamanho;     
+	DWORD tipo;
+	DWORD tamanho;
 } MensagemHeader;
 
 
@@ -37,17 +36,17 @@ typedef struct {
 	HANDLE* hPipe;
 	HANDLE hEventoParar;
 	HANDLE hEventoAvancar;
-	HANDLE *hMutex;
+	HANDLE* hMutex;
 	float pontuacao;
 	Comandos_Jogador* comandos;
 	Jogador* jogador;
 	BOOL* Continua;
 } DadosPartilhados;
 
-typedef struct { 
-	BOOL *Continua;
-	MensagemHeader *header;
-	DadosPartilhados *dadosPartilhados;
+typedef struct {
+	BOOL* Continua;
+	MensagemHeader* header;
+	DadosPartilhados* dadosPartilhados;
 } ThreadEscutaParam;
 
 typedef struct {
@@ -61,7 +60,8 @@ typedef struct {
 	HANDLE hEvent;
 	HANDLE hMutex;
 	BOOL continuar;
+	SHAREDMEM_LETRAS sharedDataCopy;
+	CRITICAL_SECTION cs;
 } SHARED_THREAD;
 
 #endif STRUCTS_H
-

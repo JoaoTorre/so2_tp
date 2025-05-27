@@ -1,0 +1,8 @@
+﻿  main.c
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(62,19): warning C4101: 'comandos': variável local não referenciada
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(219,59): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(227,59): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(239,3): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(166,8): warning C4101: 'comando': variável local não referenciada
+C:\Users\jmcos\source\repos\so2_tp\Wordgame\bot\main.c(54,1): warning C4715: 'EsperaMemData': nem todos os caminhos de controle retornam um valor
+  bot.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\bot.exe

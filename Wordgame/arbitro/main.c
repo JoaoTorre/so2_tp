@@ -482,6 +482,12 @@ DWORD WINAPI threadInterface(LPVOID param) {
     DWORD nArgumentos = 0;
     BOOL continua = TRUE;
     TCHAR username [MAX];
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    TCHAR cmdLine[256];
+
+    
+    
 
     do {
         _tprintf(_T("\nInsira Comando: "));
@@ -506,9 +512,31 @@ DWORD WINAPI threadInterface(LPVOID param) {
                         _tprintf(_T("\nJogador excluido:%s\n"), comandoArray[1]);
 
                 }
-                else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 2) {
+                else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 3) {
+                    
+                    ZeroMemory(&si, sizeof(si));
+                    si.cb = sizeof(si);
+                    ZeroMemory(&pi, sizeof(pi));
+                    
+                    _stprintf_s(cmdLine, _countof(cmdLine), _T("bot.exe %s %s"), comandoArray[1], comandoArray[2]);
 
-                    _tprintf(_T("\n Iniciar BOT : %s \n"), comandoArray[1]);
+
+
+                    if (!CreateProcess(
+                        NULL,        // Nome do módulo (NULL usa o nome no cmdLine)
+                        cmdLine,     // Linha de comando (pode ser modificada)
+                        NULL,        // Atributos de segurança do processo
+                        NULL,        // Atributos de segurança da thread
+                        FALSE,       // Herda descritores?
+                        0,           // Flags de criação
+                        NULL,        // Ambiente (NULL = herda)
+                        NULL,        // Diretório atual
+                        &si,         // Info de startup
+                        &pi))        // Info do processo (recebe os handles)
+                    {
+                        _tprintf(_T("Erro ao criar processo (%d).\n"), GetLastError());
+                        return 1;
+                    }
 
                 }
                 else if (_tcscmp(comandoArray[0], _T("acelerar")) == 0) {
@@ -539,8 +567,11 @@ DWORD WINAPI threadInterface(LPVOID param) {
            }
         } while (continua);
 
-        free(comandoArray);
-        return 0;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    free(comandoArray);
+    return 0;
 }
 
 int _tmain(int argc, TCHAR* argv[]) {
@@ -597,11 +628,11 @@ int _tmain(int argc, TCHAR* argv[]) {
 		setValueToKeyRITMO(DEFAULT_RITMO);
 	}
     dados.nJogadores = 0;
-
+    dadosConfig.ritmo = 10;
     // Preencher estrutura para letras
     TCHAR buffer[12] = _T("eu");
     letters.letrasAtuais = buffer;
-    const TCHAR* dicionario[] = {
+    TCHAR* dicionario[] = {
     _T("abacate"), _T("abelha"), _T("acaso"), _T("adeus"), _T("agora"),
     _T("alegria"), _T("amado"), _T("amigo"), _T("andar"), _T("anjo"),
     _T("antes"), _T("arroz"), _T("astro"), _T("aviao"), _T("azul"),
