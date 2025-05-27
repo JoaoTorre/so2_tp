@@ -19,7 +19,6 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
     return TRUE;
 }
 
-
 int VerificaNovoLider(ThreadDados* threadData) {
     int novoLider = 0;
     float maiorPontuacao = threadData->jogadores[0].pontuacao;
@@ -240,8 +239,6 @@ VOID novaLetra(TCHAR* letrasAtuais, TCHAR alfabeto[], TCHAR vogais[], unsigned i
     letrasAtuais[maxLetras - 1] = letraNova;
 }
 
-
-
 void atualizarLetrasDaMemoriaPartilhada(ThreadNewLet* data) {
      WaitForSingleObject(data->memdata->hMutex, INFINITE);
      _tcscpy_s(data->pSharedData->letras_visiveis, MAX_VISIBLE_LETRAS, data->letters->letrasAtuais);
@@ -271,7 +268,6 @@ DWORD WINAPI ThreadNewLetter(LPVOID param) {
         atualizarLetrasDaMemoriaPartilhada(data);
         ShowActualLetters(data->letters->letrasAtuais);
         LeaveCriticalSection(&data->letters->cs);
-        LeaveCriticalSection(&data->config->csConfig);
     }
 
     return 0;
@@ -427,13 +423,18 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                         params->dados->jogadores[params->jogadorIndex].pontuacao += len;
                         
                          jogador.palavra = (TCHAR*)malloc((_tcslen(leitura) + 1) * sizeof(TCHAR));
+
                         _tcscpy_s(jogador.palavra, _tcslen(leitura) + 1, leitura);
+
                          AvisarJogadores(params->dados, jogador, _T("ACERTOU"), pipe);
                          if (VerificaNovoLider(params->dados)) {
                              AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
                          }
 
-
+                         EnterCriticalSection(&params->letters->cs);
+                         //atualizarLetrasDaMemoriaPartilhada(data);
+                         LeaveCriticalSection(&params->letters->cs);
+                   
                          WaitForSingleObject(params->dados->memdata->hMutex, INFINITE);  
                          _tcscpy_s(params->pSharedData->palavra,MAX_VISIBLE_LETRAS,leitura);
                          ReleaseMutex(params->dados->memdata->hMutex);
