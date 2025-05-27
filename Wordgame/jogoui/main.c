@@ -99,8 +99,6 @@ int verfica_comandos(DadosPartilhados* dadosPartilhados) {
     }
 }
 
-
-
 DWORD WINAPI threadArbitro(LPVOID param) {
     ThreadEscutaParam* dados = (ThreadEscutaParam*)param;
     DWORD n;
@@ -218,8 +216,61 @@ DWORD WINAPI threadArbitro(LPVOID param) {
     return 0;
 }
 
+DWORD WINAPI EsperaMemData(LPVOID param){
+	SHARED_THREAD* sharedThread = (SHARED_THREAD*)param;
+	HANDLE handles[2] = { sharedThread->hEvent, sharedThread->hMutex };
+	DWORD dwWaitResult;
+
+    do {
+    
+		dwWaitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+
+        if (dwWaitResult == WAIT_FAILED) {
+            _tprintf(_T("[ERRO] - WaitForMultipleObjects falhou com erro: %d\n"), GetLastError());
+            return -1;
+        }
+
+        if (dwWaitResult == WAIT_OBJECT_0) {
+			sharedThread->pSharedData = (SHAREDMEM_LETRAS*)MapViewOfFile(
+				sharedThread->hMapFile,
+				FILE_MAP_READ,
+				0,
+				0,
+				sizeof(SHAREDMEM_LETRAS)
+			);
+
+            if (sharedThread->pSharedData == NULL) {
+                _tprintf(_T("Não foi possível mapear a visão do arquivo (%d).\n"), GetLastError());
+                return -1;
+            }
+
+            //Copiar a estrutura para uma variavel local
+			SHAREDMEM_LETRAS sharedDataCopy;
+			CopyMemory(&sharedDataCopy, sharedThread->pSharedData, sizeof(SHAREDMEM_LETRAS));
+			
+			UnmapViewOfFile(sharedThread->pSharedData);
+			ResetEvent(sharedThread->hEvent);
+			ReleaseMutex(sharedThread->hMutex);
+
+			for (int i = 0; i < (int)_tcslen(sharedDataCopy.letras_visiveis); i++) {
+				_tprintf(_T("%c "), sharedDataCopy.letras_visiveis[i]);
+			}
+            
+        }
+        else if (dwWaitResult == WAIT_OBJECT_0 + 1) {
+
+            ReleaseMutex(sharedThread->hMutex);
+        }
+        else {
+            _tprintf(_T("WaitForMultipleObjects retornou um resultado inesperado.\n"));
+            sharedThread->continuar = FALSE;
+            return -1;
+        }
+
+    } while (sharedThread->continuar);
 
 
+}
 
 int _tmain(int argc, LPTSTR argv[]) {
     HANDLE hPipe;
@@ -230,9 +281,10 @@ int _tmain(int argc, LPTSTR argv[]) {
     BOOL ret = FALSE;
     TCHAR Resposta_Login[MAX];
     TCHAR username[MAX];
-    HANDLE ThreadArbitro;
+    HANDLE ThreadArbitro, threadMemData;
     ThreadEscutaParam threadescuta;
     MensagemHeader header;
+	SHARED_THREAD sharedThread;
 
 #ifdef UNICODE
     _setmode(_fileno(stderr), _O_WTEXT);
@@ -278,6 +330,43 @@ int _tmain(int argc, LPTSTR argv[]) {
     }
 
 
+    /* dados para a memoria partilhada */
+    sharedThread.hMutex = OpenMutex(MUTEX_ALL_ACCESS, FALSE, MEMORIA_PARTILHADA_MUTEX);
+
+	if (sharedThread.hMutex == NULL) {
+		_tprintf_s(_T("[ERRO] - Não foi possível abrir o mutex de memória partilhada (%d).\n"), GetLastError());
+		CloseHandle(hPipe);
+		return -1;
+	}
+
+    sharedThread.hEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, MEMORIA_PARTILHADA_EVENTO);
+
+	if (sharedThread.hEvent == NULL) {
+		_tprintf_s(_T("[ERRO] - Não foi possível abrir o evento de memória partilhada (%d).\n"), GetLastError());
+		CloseHandle(sharedThread.hMutex);
+		CloseHandle(hPipe);
+		return -1;
+	}
+
+    sharedThread.hMapFile = OpenFileMapping(
+        FILE_MAP_READ,
+        FALSE,
+        MEMORIA_PARTILHADA_NOME
+    );
+
+    if (sharedThread.hMapFile == NULL) {
+		_tprintf_s(_T("[ERRO] - Não foi possível abrir o arquivo de memória partilhada (%d).\n"), GetLastError());
+		CloseHandle(sharedThread.hEvent);
+		CloseHandle(sharedThread.hMutex);
+		CloseHandle(hPipe);
+		return -1;
+    }
+
+	sharedThread.continuar = TRUE;
+
+	// criar thread para esperar atualizações da memória partilhada
+	threadMemData = CreateThread(NULL, 0, EsperaMemData, &sharedThread, 0, NULL);
+
     /*DADOS PARTILHADOS ENTRE THREAD PRINCIPAL E THREAD ESCUTA ARBITRO*/
     DadosPartilhados dadosPartilhados;
     dadosPartilhados.hMutex = &hMutex;
@@ -313,8 +402,14 @@ int _tmain(int argc, LPTSTR argv[]) {
 
     WaitForSingleObject(ThreadArbitro, INFINITE);
     CloseHandle(ThreadArbitro);
+	WaitForSingleObject(threadMemData, INFINITE);
+	CloseHandle(threadMemData);
+    CloseHandle(sharedThread.hMapFile);
+    CloseHandle(sharedThread.hEvent);
+    CloseHandle(sharedThread.hMutex);
     CloseHandle(hMutex);
     CloseHandle(hPipe);
+
 
     return 0;
 }
