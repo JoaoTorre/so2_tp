@@ -38,6 +38,8 @@ int VerificaNovoLider(ThreadDados* threadData) {
     return FALSE;
 }
 
+
+
 int BuscarNJogadoresAtivos(ThreadDados* threadData) {
     int nJogadoresAtivos = 0;
 
@@ -175,10 +177,10 @@ void ImprimirJogadores(ThreadDados* threadData) {
     }
 }
 
-BOOLEAN VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION cs) {
+int VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION cs) {
     EnterCriticalSection(&cs);
     int tamLetras = (int)_tcslen(letrasAtuais);
-    BOOLEAN letraValida;
+    BOOL letraValida;
 
 
     for (int i = 0; i < _tcslen(leitura); i++) {
@@ -195,26 +197,26 @@ BOOLEAN VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION 
             _tprintf(_T("Letra %c não é válida!\n"), leitura[i]);
             LeaveCriticalSection(&cs);
 
-            return FALSE;
+            return 0;
         }
     }
 
     LeaveCriticalSection(&cs);
-    return TRUE;
+    return 1;
 }
 
-BOOLEAN VerificaPalavra(TCHAR leitura[12], TCHAR* dicionario[]) {
+int VerificaPalavra(TCHAR leitura[12], TCHAR* dicionario[]) {
     if (leitura == NULL || dicionario == NULL){
         _tprintf(_T("ERRO: dicionario ou leitura é NULL!\n"));
-        return FALSE;
+        return 0;
     }
 
     for (int i = 0; dicionario[i] != NULL; i++) {  
         if (_tcscmp(leitura, dicionario[i]) == 0) {
-            return TRUE;  
+            return 1;  
         }
     }
-    return FALSE;  
+    return 0;  
 }
 
 VOID OrdenarArray(TCHAR* letras) {
@@ -269,9 +271,11 @@ VOID novaLetra(TCHAR* letrasAtuais, TCHAR alfabeto[], TCHAR vogais[], unsigned i
 }
 
 void atualizarLetrasDaMemoriaPartilhada(ThreadNewLet* data) {
+    TCHAR letraVisiveis[250];
     if (*data->jogoIniciado == TRUE) {
         WaitForSingleObject(data->memdata->hMutex, INFINITE);
-        _tcscpy_s(data->pSharedData->letras_visiveis, MAX_VISIBLE_LETRAS, data->letters->letrasAtuais);
+        _tcscpy_s(letraVisiveis, MAX_VISIBLE_LETRAS, data->letters->letrasAtuais);
+        _tcscpy_s(data->pSharedData->letras_visiveis, MAX_VISIBLE_LETRAS, letraVisiveis);
         ReleaseMutex(data->memdata->hMutex);
         SetEvent(data->memdata->hEvent);
     }   
@@ -288,11 +292,29 @@ void ShowActualLetters(TCHAR* letrasAtuais) {
 
 DWORD WINAPI ThreadNewLetter(LPVOID param) {
 	ThreadNewLet* data = (ThreadNewLet*)param;
+
+    HANDLE hTimer = CreateWaitableTimer(NULL, TRUE, NULL);
+
+    if (hTimer == NULL) {
+        printf("[ERRO] - ao criar o timer: %lu\n", GetLastError());
+        return -1;
+    }
+
     while (data->continuar) {
         if (*data->jogoIniciado == TRUE) {
+            LARGE_INTEGER liDueTime;
+
             EnterCriticalSection(&data->config->csConfig);
-            Sleep(data->config->ritmo * 1000);
+            liDueTime.QuadPart = -(LONGLONG)(data->config->ritmo * 10000000LL);
             LeaveCriticalSection(&data->config->csConfig);
+
+            if (!SetWaitableTimer(hTimer, &liDueTime, 0, NULL, NULL, FALSE)) {
+                printf("Erro ao definir o timer: %lu\n", GetLastError());
+                break;
+            }
+
+            WaitForSingleObject(hTimer, INFINITE);
+
             EnterCriticalSection(&data->letters->cs);
             novaLetra(data->letters->letrasAtuais, data->alfabeto, data->vogais, data->config->max_letras);
             atualizarLetrasDaMemoriaPartilhada(data);
@@ -301,6 +323,7 @@ DWORD WINAPI ThreadNewLetter(LPVOID param) {
         }   
     }
 
+    CloseHandle(hTimer);
     return 0;
 }
 
@@ -449,7 +472,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             header.tamanho = sizeof(_T("PRECEBIDA"));
             WriteFile(pipe, &header, sizeof(header), &n, NULL);
 
-            _tprintf(_T("[ARBITRO] - Palvra recebida: %ls\n"), comandos.comando);
+            _tprintf(_T("[ARBITRO] - Palavra recebida: %ls -> %ls\n"), comandos.comando, params->dados->jogadores[params->jogadorIndex].username);
             _tcslwr_s(comandos.comando, sizeof(comandos.comando) / sizeof(TCHAR));
 
             // fazer verificação da palavra
@@ -462,7 +485,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             }
 
             if (1 > len && len > MAXIMO_LETRAS) { // corrigir
-                _tprintf_s(_T("Palavra muito longa! Tente novamente.\n"));
+                _tprintf_s(_T("Palavra muito longa!\n"));
                 params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
             }
             else {
@@ -473,18 +496,18 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                 EnterCriticalSection(&params->letters->cs);
                 _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), params->letters->letrasAtuais, _tcslen(params->letters->letrasAtuais));
                 LeaveCriticalSection(&params->letters->cs);
-                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
-                    _tprintf_s(_T("DEBUG - Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
+                if (!VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
                     EnterCriticalSection(&params->letters->cs);
                     if (VerificaPalavra(leitura, params->letters->dicionario)) {
                         // dar os pontos ao jogador e atualizar letras disponiveis
-                         _tprintf_s(_T("Letras certas! %s -> %d\n"), leitura, (int)_tcslen(leitura));
                         OrdenarArray(letrasAtuaisCopyVerificacao);
                         _tcsncpy_s(params->letters->letrasAtuais, params->dados->config->max_letras + 1, letrasAtuaisCopyVerificacao, params->dados->config->max_letras + 1);
                         params->dados->jogadores[params->jogadorIndex].pontuacao += len;
                         
                          jogador.palavra = (TCHAR*)malloc((_tcslen(leitura) + 1) * sizeof(TCHAR));
+
                          jogador.pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
+
                         _tcscpy_s(jogador.palavra, _tcslen(leitura) + 1, leitura);
 
                          AvisarJogadores(params->dados, jogador, _T("ACERTOU"), pipe);
@@ -493,7 +516,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                          }
 
                          EnterCriticalSection(&params->letters->cs);
-                         //atualizarLetrasDaMemoriaPartilhada(data);
+                         atualizarLetrasDaMemoriaPartilhada(params->threadNewLet);
                          LeaveCriticalSection(&params->letters->cs);
                    
                          WaitForSingleObject(params->dados->memdata->hMutex, INFINITE);  
@@ -503,7 +526,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                     }
                     else {
                         // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
-                        _tprintf_s(_T("Palavra não encontrada! Tente novamente.\n"));
+                        _tprintf_s(_T("Palavra não encontrada!\n"));
                         params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
                         if (VerificaNovoLider(params->dados)) {
                             AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
@@ -690,7 +713,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     dados.nJogadores = 0;
 
     // Preencher estrutura para letras
-    TCHAR buffer[12] = _T("eu");
+    TCHAR buffer[12] = _T("");
     letters.letrasAtuais = buffer;
     TCHAR* dicionario[] = {
     _T("abacate"), _T("abelha"), _T("acaso"), _T("adeus"), _T("agora"),
@@ -715,7 +738,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     _T("novo"), _T("olhar"), _T("onda"), _T("ouro"), _T("paz"),
     _T("pente"), _T("plano"), _T("poder"), _T("praia"), _T("preto"),
     _T("rato"), _T("rosto"), _T("rua"), _T("saber"), _T("salto"),
-       _T("eu"), _T("ar"), _T("ele"), _T("ela"), _T("nos"), _T("lei"), NULL};
+       _T("eu"), _T("ar"), _T("ele"), _T("ela"), _T("nos"), _T("lei"), _T("a"), _T("e"), _T("i"), NULL};
     letters.dicionario = dicionario;
     InitializeCriticalSection(&letters.cs);
 
@@ -854,6 +877,18 @@ int _tmain(int argc, TCHAR* argv[]) {
 
     
      //criar thread interface
+    
+
+     // Preencher estrutura para Thread que gera novas letras
+     threadNewLet.alfabeto = _T("abcdefghijlmnopqrstuvxz");
+     threadNewLet.vogais = _T("aeiou");
+     threadNewLet.continuar = TRUE;
+     threadNewLet.config = &dadosConfig;
+     threadNewLet.letters = &letters;
+     threadNewLet.memdata = &memdata;
+     threadNewLet.jogoIniciado = &inicioJogo;
+     threadNewLet.pSharedData = pSharedData;
+
      hThreadInterface = CreateThread(NULL, 0, threadInterface, &dados, 0, NULL);
 
      if (hThreadInterface == NULL) {
@@ -866,15 +901,6 @@ int _tmain(int argc, TCHAR* argv[]) {
          return -1;
      }
 
-     // Preencher estrutura para Thread que gera novas letras
-     threadNewLet.alfabeto = _T("abcdefghijlmnopqrstuvxz");
-     threadNewLet.vogais = _T("aeiou");
-     threadNewLet.continuar = TRUE;
-     threadNewLet.config = &dadosConfig;
-     threadNewLet.letters = &letters;
-     threadNewLet.memdata = &memdata;
-     threadNewLet.jogoIniciado = &inicioJogo;
-     threadNewLet.pSharedData = pSharedData;
      // criar thread nova letra
 	 hThreadNewLetter = CreateThread(NULL, 0, ThreadNewLetter, &threadNewLet, 0, NULL);
 
@@ -899,6 +925,7 @@ int _tmain(int argc, TCHAR* argv[]) {
                  params->dados = &dados;
                  params->letters = &letters;
                  params->pSharedData = pSharedData;
+				 params->threadNewLet = &threadNewLet;
 
                  // Criar a thread
                  hThreads[dados.nJogadores] = CreateThread(NULL, 0, threadTrataCliente, params, 0, NULL);

@@ -11,13 +11,13 @@ typedef struct {
 	HANDLE hEvent;
 	HANDLE hMutex;
 	HANDLE hMapFile;
-}MEMDATA;
+} MEMDATA;
 
 typedef struct {
 	HANDLE hInstancia;
 	OVERLAPPED overlap;
 	BOOL activo;
-}DadosPipe;
+} DadosPipe;
 
 typedef struct {
 	TCHAR letras_visiveis[MAX_VISIBLE_LETRAS];
@@ -27,7 +27,7 @@ typedef struct {
 typedef struct {
 	TCHAR comando[256];
 	int tipo_comando;
-}Comandos_Jogador;
+} Comandos_Jogador;
 
 typedef struct {
 	TCHAR username[MAX];
@@ -35,7 +35,7 @@ typedef struct {
 	TCHAR* palavra;
 	BOOL ativo;
 	BOOL bot;
-}Jogador;
+} Jogador;
 
 typedef struct {
 	int max_letras;
@@ -55,7 +55,7 @@ typedef struct {
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
 	ConfigJogo* config;
 	BOOL *jogoIniciado;
-}ThreadDados;
+} ThreadDados;
 
 typedef struct {
 	TCHAR* letrasAtuais;
@@ -79,6 +79,7 @@ typedef struct {
 	ThreadDados* dados;
 	Letters* letters;
 	SHAREDMEM_LETRAS *pSharedData;
+	ThreadNewLet* threadNewLet;
 } ThreadParams;
 
 typedef struct {

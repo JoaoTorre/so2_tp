@@ -129,7 +129,7 @@ DWORD WINAPI ThreadEscuta(LPVOID param) {
 int _tmain(int argc, LPTSTR argv[]){
 	unsigned int wait_time;
 	Jogador jogador;
-	HANDLE hPipe, hThreadMemData, hThreadEscuta;
+	HANDLE hPipe, hThreadMemData, hThreadEscuta, hTimer;
     SHARED_THREAD sharedThread;
 	BOOL continua = TRUE;
 	Comandos_Jogador comandos_jogador;
@@ -173,14 +173,18 @@ int _tmain(int argc, LPTSTR argv[]){
 	_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
-	if (argc != 3) {
+	/*if (argc != 3) {
 		_tprintf(_T("[ERRO <BOT> ] - Número de argumentos não válido ./bot.exe <username> <tempo>\n"));
 		return -1;
 	}
-
+	
 	wcscpy_s(jogador.username, _countof(jogador.username), argv[1]);
-
 	wait_time = _tstoi(argv[2]);
+
+	*/
+
+	wcscpy_s(jogador.username, _countof(jogador.username), _T("olasydbsa"));
+	wait_time = 3;
 	jogador.bot = TRUE;
 
 	if (wait_time < 1) {
@@ -271,6 +275,15 @@ int _tmain(int argc, LPTSTR argv[]){
 	dadosPartilhados.hMutex = &hMutex;
 	dadosPartilhados.hEventoParar = CreateEvent(NULL, TRUE, FALSE, NULL);
 	dadosPartilhados.hEventoAvancar = CreateEvent(NULL, TRUE, TRUE, NULL);
+	if (dadosPartilhados.hEventoParar == NULL || dadosPartilhados.hEventoAvancar == NULL) {
+		_tprintf(TEXT("[ERRO <BOT> ] - Não foi possível criar eventos de sincronização.\n"));
+		CloseHandle(sharedThread.hMapFile);
+		CloseHandle(sharedThread.hEvent);
+		CloseHandle(sharedThread.hMutex);
+		CloseHandle(hPipe);
+		return -1;
+	}
+
 	dadosPartilhados.pontuacao = 0;
 	dadosPartilhados.hPipe = &hPipe;
 	dadosPartilhados.jogador = &jogador;
@@ -293,13 +306,33 @@ int _tmain(int argc, LPTSTR argv[]){
 		return -1;
 	}
 
+	hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+	if (hTimer == NULL) {
+		printf("Erro ao criar o timer: %lu\n", GetLastError());
+		return 1;
+	}
+
+	// Tempo inicial de espera (relativo, em 100 nanossegundos)
+	LARGE_INTEGER liDueTime;
+	liDueTime.QuadPart = -(LONGLONG)(wait_time * 10000000LL);
+
+	// Define o timer para repetir a cada INTERVALO_SEGUNDOS
+	if (!SetWaitableTimer(hTimer, &liDueTime, wait_time * 1000, NULL, NULL, FALSE)) {
+		printf("Erro ao definir o timer: %lu\n", GetLastError());
+		CloseHandle(hTimer);
+		return 1;
+	}
 
 	do {
-		Sleep(wait_time * 1000);
-		
+		WaitForSingleObject(hTimer, INFINITE);
+		palavraCompleta[0] = _T('\0');
+
 		EnterCriticalSection(&sharedThread.cs);
 		letrasAtuais = sharedThread.sharedDataCopy.letras_visiveis;
 		LeaveCriticalSection(&sharedThread.cs);
+
+		//print letras atuais
+		_tprintf(_T("[BOT] - Letras atuais: %s\n"), letrasAtuais);
 
 		for (int i = 0; dicionario[i] != NULL; i++) {
 			TCHAR temp[100];
@@ -329,7 +362,6 @@ int _tmain(int argc, LPTSTR argv[]){
 
 			if (podeFormar) {
 				wcscpy_s(palavraCompleta, _countof(palavraCompleta), dicionario[i]);
-
 				break; 
 			}
 		}
@@ -338,13 +370,10 @@ int _tmain(int argc, LPTSTR argv[]){
 			ResetEvent(dadosPartilhados.hEventoAvancar);
 			SetEvent(dadosPartilhados.hEventoParar);
 			WaitForSingleObject(hMutex, INFINITE);
-
 			wcscpy_s(comandos_jogador.comando, _countof(comandos_jogador.comando), palavraCompleta);
-
 			comandos_jogador.tipo_comando = 5;
-			ReleaseMutex(hMutex);
-
 			WriteFile(hPipe, &comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
+			ReleaseMutex(hMutex);
 			ResetEvent(dadosPartilhados.hEventoParar);
 			SetEvent(dadosPartilhados.hEventoAvancar);
 		}
@@ -359,9 +388,11 @@ int _tmain(int argc, LPTSTR argv[]){
 	/* FECHAR HANDLES */
 	sharedThread.continuar = FALSE;
 	DeleteCriticalSection(&sharedThread.cs);
-
+	CloseHandle(hTimer);
 	WaitForSingleObject(hThreadMemData, INFINITE);
 	CloseHandle(hThreadMemData);
+	WaitForSingleObject(hThreadEscuta, INFINITE);
+	CloseHandle(hThreadEscuta);
 	CloseHandle(sharedThread.hMapFile);
 	CloseHandle(sharedThread.hEvent);
 	CloseHandle(sharedThread.hMutex);

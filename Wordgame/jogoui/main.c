@@ -84,7 +84,7 @@ int verifica_comandos(DadosPartilhados* dadosPartilhados) {
         _tprintf(_T("Comando inválido: %s\n"), comando);
         return TRUE; 
     }
-    else if (_tcslen(comando) > 1) {
+    else if (_tcslen(comando) > 0) { // alterar depois
         if (dadosPartilhados->jogoIniciado == TRUE) {
             ResetEvent(dadosPartilhados->hEventoAvancar);
             SetEvent(dadosPartilhados->hEventoParar);
