@@ -476,7 +476,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             _tcslwr_s(comandos.comando, sizeof(comandos.comando) / sizeof(TCHAR));
 
             // fazer verificação da palavra
-            TCHAR* leitura = comandos.comando; // perigo corrigir
+            TCHAR* leitura = &comandos.comando; // perigo corrigir
 
             size_t len = _tcslen(leitura);
             if (len > 0 && leitura[len - 1] == _T('\n')) {
@@ -496,29 +496,33 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                 EnterCriticalSection(&params->letters->cs);
                 _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), params->letters->letrasAtuais, _tcslen(params->letters->letrasAtuais));
                 LeaveCriticalSection(&params->letters->cs);
-                if (!VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
-                    EnterCriticalSection(&params->letters->cs);
+                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
                     if (VerificaPalavra(leitura, params->letters->dicionario)) {
                         // dar os pontos ao jogador e atualizar letras disponiveis
+                       
+						_tprintf_s(_T("Palavra correta! Pontos atribuídos: %d\n"), len);
+						_tprintf_s(_T("Letras atuais: %s\n"), params->letters->letrasAtuais);
+
                         OrdenarArray(letrasAtuaisCopyVerificacao);
                         _tcsncpy_s(params->letters->letrasAtuais, params->dados->config->max_letras + 1, letrasAtuaisCopyVerificacao, params->dados->config->max_letras + 1);
                         params->dados->jogadores[params->jogadorIndex].pontuacao += len;
                         
-                         jogador.palavra = (TCHAR*)malloc((_tcslen(leitura) + 1) * sizeof(TCHAR));
+                        jogador.palavra = (TCHAR*)malloc((_tcslen(leitura) + 1) * sizeof(TCHAR));
 
-                         jogador.pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
+                        jogador.pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
 
                         _tcscpy_s(jogador.palavra, _tcslen(leitura) + 1, leitura);
 
-                         AvisarJogadores(params->dados, jogador, _T("ACERTOU"), pipe);
-                         if (VerificaNovoLider(params->dados)) {
-                             AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
-                         }
-
-                         EnterCriticalSection(&params->letters->cs);
-                         atualizarLetrasDaMemoriaPartilhada(params->threadNewLet);
-                         LeaveCriticalSection(&params->letters->cs);
+                        EnterCriticalSection(&params->letters->cs);
+                        atualizarLetrasDaMemoriaPartilhada(params->threadNewLet);
+                        LeaveCriticalSection(&params->letters->cs);
                    
+
+                        //AvisarJogadores(params->dados, jogador, _T("ACERTOU"), pipe);
+                        if (VerificaNovoLider(params->dados)) {
+                            AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
+                        }
+
                          WaitForSingleObject(params->dados->memdata->hMutex, INFINITE);  
                          _tcscpy_s(params->pSharedData->palavra,MAX_VISIBLE_LETRAS,leitura);
                          ReleaseMutex(params->dados->memdata->hMutex);
@@ -532,7 +536,7 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                             AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
                         }
                     }
-                    LeaveCriticalSection(&params->letters->cs);
+                    
                 }
                 else {
                     // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
@@ -713,7 +717,7 @@ int _tmain(int argc, TCHAR* argv[]) {
     dados.nJogadores = 0;
 
     // Preencher estrutura para letras
-    TCHAR buffer[12] = _T("");
+    TCHAR buffer[12] = _T("eu");
     letters.letrasAtuais = buffer;
     TCHAR* dicionario[] = {
     _T("abacate"), _T("abelha"), _T("acaso"), _T("adeus"), _T("agora"),
