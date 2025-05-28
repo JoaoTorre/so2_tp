@@ -42,6 +42,7 @@ typedef struct {
 	Comandos_Jogador* comandos;
 	Jogador* jogador;
 	BOOL* Continua;
+	BOOL jogoIniciado;
 } DadosPartilhados;
 
 typedef struct { 

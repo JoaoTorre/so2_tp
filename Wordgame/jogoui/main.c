@@ -85,17 +85,23 @@ int verifica_comandos(DadosPartilhados* dadosPartilhados) {
         return TRUE; 
     }
     else if (_tcslen(comando) > 1) {
-        ResetEvent(dadosPartilhados->hEventoAvancar);
-        SetEvent(dadosPartilhados->hEventoParar);
-        WaitForSingleObject(hMutex, INFINITE);
-        wcscpy_s(comandos_jogador->comando, _countof(comandos_jogador->comando), comando);
-        comandos_jogador->tipo_comando = 5;
-        ReleaseMutex(hMutex);
-        WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
-        _tprintf(TEXT("Palavra Enviada : %s\n"), comando);
-        ResetEvent(dadosPartilhados->hEventoParar);
-        SetEvent(dadosPartilhados->hEventoAvancar);
-        return TRUE;
+        if (dadosPartilhados->jogoIniciado == TRUE) {
+            ResetEvent(dadosPartilhados->hEventoAvancar);
+            SetEvent(dadosPartilhados->hEventoParar);
+            WaitForSingleObject(hMutex, INFINITE);
+            wcscpy_s(comandos_jogador->comando, _countof(comandos_jogador->comando), comando);
+            comandos_jogador->tipo_comando = 5;
+            ReleaseMutex(hMutex);
+            WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
+            _tprintf(TEXT("Palavra Enviada : %s\n"), comando);
+            ResetEvent(dadosPartilhados->hEventoParar);
+            SetEvent(dadosPartilhados->hEventoAvancar);
+            return TRUE;
+        }
+        else {
+            _tprintf(_T("Jogo ainda não iniciado!\n"));
+            return TRUE;
+        }     
     }
 }
 
@@ -174,6 +180,26 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                     break;
                 }
 
+                case 10: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
+                    resposta[n / sizeof(TCHAR)] = _T('\0');
+                    WaitForSingleObject(*dados->dadosPartilhados->hMutex, INFINITE);
+                    dados->dadosPartilhados->jogoIniciado = TRUE;
+                    ReleaseMutex(*dados->dadosPartilhados->hMutex);
+                    _tprintf(TEXT("\nJogo iniciado\n"));
+                    break;
+                }
+
+                case 20: {
+                    ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
+                    resposta[n / sizeof(TCHAR)] = _T('\0');
+                    WaitForSingleObject(*dados->dadosPartilhados->hMutex, INFINITE);
+                    dados->dadosPartilhados->jogoIniciado = FALSE;
+                    ReleaseMutex(*dados->dadosPartilhados->hMutex);
+                    _tprintf(TEXT("\nJogo Terminou,nº jogadores inferior a um \n"));
+                    break;
+                }
+
 
                 case 70: {
                     ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
@@ -227,7 +253,7 @@ DWORD WINAPI EsperaMemData(LPVOID param){
 
         if (dwWaitResult == WAIT_FAILED) {
             _tprintf(_T("[ERRO] - WaitForMultipleObjects falhou com erro: %d\n"), GetLastError());
-            return -1;
+            sharedThread->continuar = FALSE;
         }
 
         if (dwWaitResult == WAIT_OBJECT_0) {
@@ -241,7 +267,7 @@ DWORD WINAPI EsperaMemData(LPVOID param){
 
             if (sharedThread->pSharedData == NULL) {
                 _tprintf(_T("Não foi possível mapear a visão do arquivo (%d).\n"), GetLastError());
-                return -1;
+                 sharedThread->continuar = FALSE;
             }
 
             //Copiar a estrutura para uma variavel local
@@ -262,11 +288,7 @@ DWORD WINAPI EsperaMemData(LPVOID param){
 
             ReleaseMutex(sharedThread->hMutex);
         }
-        else {
-            _tprintf(_T("WaitForMultipleObjects retornou um resultado inesperado.\n"));
-            sharedThread->continuar = FALSE;
-            return -1;
-        }
+       
 
     } while (sharedThread->continuar);
 
@@ -386,6 +408,7 @@ int _tmain(int argc, LPTSTR argv[]) {
     dadosPartilhados.comandos = &comandos_jogador;
     dadosPartilhados.jogador = &jogador;
     dadosPartilhados.Continua=&continua;
+    dadosPartilhados.jogoIniciado = FALSE;
     
 
     /*DADOS PARTILHADOS ENTRE THREAD ESCUTA ARBITRO*/

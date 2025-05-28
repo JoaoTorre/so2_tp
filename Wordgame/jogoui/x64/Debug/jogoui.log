@@ -1,13 +1,11 @@
 ﻿  main.c
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(108,22): warning C4101: 'comandos': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(334,62): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(342,62): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(354,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(283,11): warning C4101: 'username': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(282,11): warning C4101: 'Resposta_Login': variável local não referenciada
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(280,11): warning C4101: 'n': variável local não referenciada
-  utils.c
-  Gerando Código...
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(273,1): warning C4715: 'EsperaMemData': nem todos os caminhos de controle retornam um valor
-C:\Users\jmcos\source\repos\so2_tp\Wordgame\jogoui\main.c(100,1): warning C4715: 'verifica_comandos': nem todos os caminhos de controle retornam um valor
-  jogoui.vcxproj -> C:\Users\jmcos\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(114,22): warning C4101: 'comandos': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(357,62): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(365,62): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(377,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(306,11): warning C4101: 'username': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(305,11): warning C4101: 'Resposta_Login': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(303,11): warning C4101: 'n': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(296,1): warning C4716: 'EsperaMemData': deve retornar um valor
+C:\Users\nunom\source\repos\so2_tp\Wordgame\jogoui\main.c(106,1): warning C4715: 'verifica_comandos': nem todos os caminhos de controle retornam um valor
+  jogoui.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\jogoui.exe
