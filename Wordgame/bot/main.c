@@ -11,7 +11,7 @@ DWORD WINAPI EsperaMemData(LPVOID param) {
 		dwWaitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
 
 		if (dwWaitResult == WAIT_FAILED) {
-			_tprintf(_T("[ERRO] - WaitForMultipleObjects falhou com erro: %d\n"), GetLastError());
+			_tprintf(_T("[ERRO <BOT> ] - WaitForMultipleObjects falhou com erro: %d\n"), GetLastError());
 			return -1;
 		}
 
@@ -25,7 +25,7 @@ DWORD WINAPI EsperaMemData(LPVOID param) {
 			);
 
 			if (sharedThread->pSharedData == NULL) {
-				_tprintf(_T("Não foi possível mapear a visão do arquivo (%d).\n"), GetLastError());
+				_tprintf(_T("[ERRO <BOT> ] - Não foi possível mapear a visão do arquivo (%d).\n"), GetLastError());
 				return -1;
 			}
 
@@ -43,7 +43,7 @@ DWORD WINAPI EsperaMemData(LPVOID param) {
 			ReleaseMutex(sharedThread->hMutex);
 		}
 		else {
-			_tprintf(_T("WaitForMultipleObjects retornou um resultado inesperado.\n"));
+			_tprintf(_T("[ERRO <BOT> ] - WaitForMultipleObjects retornou um resultado inesperado.\n"));
 			sharedThread->continuar = FALSE;
 			return -1;
 		}
@@ -174,7 +174,7 @@ int _tmain(int argc, LPTSTR argv[]){
 #endif
 
 	if (argc != 3) {
-		_tprintf(_T("[ERRO] Número de argumentos não válido ./bot.exe <username> <tempo>\n"));
+		_tprintf(_T("[ERRO <BOT> ] - Número de argumentos não válido ./bot.exe <username> <tempo>\n"));
 		return -1;
 	}
 
@@ -184,7 +184,7 @@ int _tmain(int argc, LPTSTR argv[]){
 	jogador.bot = TRUE;
 
 	if (wait_time < 1) {
-		_tprintf(_T("[ERRO] Tempo de espera deve ser maior que 0.\n"));
+		_tprintf(_T("[ERRO <BOT> ] - Tempo de espera deve ser maior que 0.\n"));
 		return -1;
 	}
 
@@ -204,12 +204,12 @@ int _tmain(int argc, LPTSTR argv[]){
         }
 
         if (GetLastError() != ERROR_PIPE_BUSY) {
-            _tprintf_s(_T("[ERRO] - Não foi possível abrir o pipe. GLE=%d\n"), GetLastError());
+            _tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir o pipe. GLE=%d\n"), GetLastError());
             return -1;
         }
 
         if (!WaitNamedPipe(name_pipe, 20000)) {
-            _tprintf_s(_T("[ERRO] - Não foi possível abrir pipe: 20 segundos timed out\n"));
+            _tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir pipe: 20 segundos timed out\n"));
             return -1;
         }
 	}
@@ -218,7 +218,7 @@ int _tmain(int argc, LPTSTR argv[]){
 	sharedThread.hMutex = OpenMutex(MUTEX_ALL_ACCESS, FALSE, MEMORIA_PARTILHADA_MUTEX);
 
 	if (sharedThread.hMutex == NULL) {
-		_tprintf_s(_T("[ERRO] - Não foi possível abrir o mutex de memória partilhada (%d).\n"), GetLastError());
+		_tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir o mutex de memória partilhada (%d).\n"), GetLastError());
 		CloseHandle(hPipe);
 		return -1;
 	}
@@ -226,7 +226,7 @@ int _tmain(int argc, LPTSTR argv[]){
 	sharedThread.hEvent = OpenEvent(EVENT_ALL_ACCESS, FALSE, MEMORIA_PARTILHADA_EVENTO);
 
 	if (sharedThread.hEvent == NULL) {
-		_tprintf_s(_T("[ERRO] - Não foi possível abrir o evento de memória partilhada (%d).\n"), GetLastError());
+		_tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir o evento de memória partilhada (%d).\n"), GetLastError());
 		CloseHandle(sharedThread.hMutex);
 		CloseHandle(hPipe);
 		return -1;
@@ -239,7 +239,7 @@ int _tmain(int argc, LPTSTR argv[]){
 	);
 
 	if (sharedThread.hMapFile == NULL) {
-		_tprintf_s(_T("[ERRO] - Não foi possível abrir o arquivo de memória partilhada (%d).\n"), GetLastError());
+		_tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir o arquivo de memória partilhada (%d).\n"), GetLastError());
 		CloseHandle(sharedThread.hEvent);
 		CloseHandle(sharedThread.hMutex);
 		CloseHandle(hPipe);
@@ -249,10 +249,9 @@ int _tmain(int argc, LPTSTR argv[]){
 	sharedThread.continuar = TRUE;
 	InitializeCriticalSection(&sharedThread.cs);
 
-	// criar thread para esperar atualizações da memória partilhada
 	hThreadMemData = CreateThread(NULL, 0, EsperaMemData, &sharedThread, 0, NULL);
 	if (hThreadMemData == NULL) {
-		_tprintf(TEXT("[ERRO] - Criar ThreadMemData! (CreateThread)\n"));
+		_tprintf(TEXT("[ERRO <BOT> ] - Criar ThreadMemData! (CreateThread)\n"));
 		CloseHandle(sharedThread.hMapFile);
 		CloseHandle(sharedThread.hEvent);
 		CloseHandle(sharedThread.hMutex);
@@ -283,7 +282,7 @@ int _tmain(int argc, LPTSTR argv[]){
 
 	hThreadEscuta = CreateThread(NULL, 0, ThreadEscuta, &threadescuta, 0, NULL);
 	if (hThreadEscuta == NULL) {
-		_tprintf(TEXT("[ERRO] - Criar ThreadInterface! (CreateThread)\n"));
+		_tprintf(TEXT("[ERRO <BOT> ] - Criar ThreadInterface! (CreateThread)\n"));
 		CloseHandle(sharedThread.hMapFile);
 		CloseHandle(sharedThread.hEvent);
 		CloseHandle(sharedThread.hMutex);
@@ -336,7 +335,6 @@ int _tmain(int argc, LPTSTR argv[]){
 		}
 
 		if (_tcslen(palavraCompleta) > 0) {
-			_tprintf(_T("Palavra formada: %s\n"), palavraCompleta);
 			ResetEvent(dadosPartilhados.hEventoAvancar);
 			SetEvent(dadosPartilhados.hEventoParar);
 			WaitForSingleObject(hMutex, INFINITE);
@@ -347,12 +345,11 @@ int _tmain(int argc, LPTSTR argv[]){
 			ReleaseMutex(hMutex);
 
 			WriteFile(hPipe, &comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
-			_tprintf(TEXT("Palavra Enviada : %s\n"), palavraCompleta);
 			ResetEvent(dadosPartilhados.hEventoParar);
 			SetEvent(dadosPartilhados.hEventoAvancar);
 		}
 		else {
-			_tprintf(_T("Nenhuma palavra pôde ser formada.\n"));
+			_tprintf(_T(" [BOT] - Nenhuma palavra pôde ser formada.\n"));
 		}
 		
 	} while (continua);
