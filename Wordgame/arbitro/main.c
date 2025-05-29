@@ -965,7 +965,7 @@ int _tmain(int argc, TCHAR* argv[]) {
                  ReleaseMutex(dados.hMutex);
 
                  ThreadParams* params = malloc(sizeof(ThreadParams));
-                 params->jogadorIndex = &i;
+                 params->jogadorIndex = i;
                  params->dados = &dados;
                  params->letters = &letters;
                  params->pSharedData = pSharedData;
