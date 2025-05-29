@@ -55,6 +55,8 @@ typedef struct {
 	Jogador jogadores[DEFAULT_MAX_JOGADORES];
 	ConfigJogo* config;
 	BOOL *jogoIniciado;
+	HANDLE *hEventoInicio;
+	HANDLE* hEventoFim;
 } ThreadDados;
 
 typedef struct {
@@ -72,6 +74,8 @@ typedef struct {
 	MEMDATA* memdata;
 	SHAREDMEM_LETRAS* pSharedData;
 	BOOL *jogoIniciado;
+	HANDLE* hEventoInicio;
+	HANDLE* hEventoFim;
 } ThreadNewLet;
 
 typedef struct {

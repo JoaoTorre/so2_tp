@@ -11,21 +11,21 @@ C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(208,50): warning C447
   
 C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(269,13): warning C4018: '<': incompatibilidade de signed/unsigned
 C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(276,23): warning C4018: '<': incompatibilidade de signed/unsigned
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(316,23): warning C4244: 'return': conversão de 'float' para 'int', possível perda de dados
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(325,45): warning C4047: 'função': 'TCHAR **' difere em níveis de indireção de 'TCHAR *'
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(325,45): warning C4024: 'VerificaPalavra': tipos diferentes para parâmetro formal e real 2
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(327,24): warning C4477: 'wprintf_s': a cadeia de formato '%d' requer um argumento do tipo 'int', mas um argumento variadic 1 tem o tipo 'size_t'
-      C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(327,24):
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(319,23): warning C4244: 'return': conversão de 'float' para 'int', possível perda de dados
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(328,45): warning C4047: 'função': 'TCHAR **' difere em níveis de indireção de 'TCHAR *'
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(328,45): warning C4024: 'VerificaPalavra': tipos diferentes para parâmetro formal e real 2
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(330,24): warning C4477: 'wprintf_s': a cadeia de formato '%d' requer um argumento do tipo 'int', mas um argumento variadic 1 tem o tipo 'size_t'
+      C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(330,24):
       considere usar '%zd' na cadeia de formato
   
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(550,66): warning C4267: '=': conversão de 'size_t' para 'DWORD', possível perda de dados
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(557,85): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(565,85): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(604,11): warning C4101: 'nomeFicheiro': variável local não referenciada
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(780,24): warning C4047: '=': 'TCHAR *' difere em níveis de indireção de 'TCHAR **'
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(794,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(805,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(816,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(902,34): warning C4047: '=': 'int *' difere em níveis de indireção de 'int'
-C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(698,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(557,66): warning C4267: '=': conversão de 'size_t' para 'DWORD', possível perda de dados
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(564,85): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(572,85): warning C4267: 'função': conversão de 'size_t' para 'DWORD', possível perda de dados
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(611,11): warning C4101: 'nomeFicheiro': variável local não referenciada
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(786,24): warning C4047: '=': 'TCHAR *' difere em níveis de indireção de 'TCHAR **'
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(800,9): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(811,54): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(827,48): warning C4129: "F": sequência de escape de caracteres não reconhecida
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(913,34): warning C4047: '=': 'int *' difere em níveis de indireção de 'int'
+C:\Users\nunom\source\repos\so2_tp\Wordgame\arbitro\main.c(705,31): warning C4101: 'hSemaphoreMaxClientes': variável local não referenciada
   arbitro.vcxproj -> C:\Users\nunom\source\repos\so2_tp\Wordgame\x64\Debug\arbitro.exe
