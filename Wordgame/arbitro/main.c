@@ -45,9 +45,10 @@ int VerificaNovoLider(ThreadDados* threadData) {
 
     if (novoLider != -1 && novoLider != threadData->JogadorIndexLider) {
         threadData->JogadorIndexLider = novoLider;
+        return novoLider;
     }
 
-    return threadData->JogadorIndexLider;
+    return -1;
 }
 
 
@@ -574,10 +575,10 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                 AvisarJogadores(params->dados,jogador, _T("AFRENTE"), pipe);
             }
             else if (jogadorFrente == -1) {
-               // EMPATE COM ALGUM JOGADOR
+               // EMPATE COM ALGUM JOGADOR OU NÃO EXISTE MUDANÇA DE LIDER
             }
             // OUTRO JOGADOR PASSOU A SER LIDER
-            else {
+            else if(jogadorFrente != params->jogadorIndex){
                 AvisarJogadores(params->dados,params->dados->jogadores[jogadorFrente], _T("AFRENTE"), params->dados->hPipes[jogadorFrente].hInstancia);
             }
 
