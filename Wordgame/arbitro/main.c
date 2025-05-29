@@ -954,7 +954,7 @@ int _tmain(int argc, TCHAR* argv[]) {
          i = offset - WAIT_OBJECT_0;
 
          if (i >= 0 && i < DEFAULT_MAX_JOGADORES) {
-             _tprintf(TEXT("[ARBITRO] - Jogador/Bot %d entrou...\n"), i);
+             _tprintf(TEXT("[ARBITRO] - Jogador/Bot %d entrou...\n"), i+1);
              if (GetOverlappedResult(dados.hPipes[i].hInstancia,
                  &dados.hPipes[i].overlap, &nBytes, FALSE)) {
 
@@ -965,7 +965,7 @@ int _tmain(int argc, TCHAR* argv[]) {
                  ReleaseMutex(dados.hMutex);
 
                  ThreadParams* params = malloc(sizeof(ThreadParams));
-                 params->jogadorIndex = i;
+                 params->jogadorIndex = &i;
                  params->dados = &dados;
                  params->letters = &letters;
                  params->pSharedData = pSharedData;
