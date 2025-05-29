@@ -201,7 +201,7 @@ int _tmain(int argc, LPTSTR argv[]){
         }
 
         if (GetLastError() != ERROR_PIPE_BUSY) {
-            _tprintf_s(_T("[ERRO <BOT> ] - Não foi possível abrir o pipe. GLE=%d\n"), GetLastError());
+            _tprintf_s(_T("[ERRO <BOT> ] - Não foi possível estabelecer comunicação com arbitro GLE=%d\n"), GetLastError());
             return -1;
         }
 

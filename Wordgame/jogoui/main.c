@@ -185,6 +185,7 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                         ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
                         resposta[n / sizeof(TCHAR)] = _T('\0');
                         _tprintf(TEXT("\nSessão iniciada com sucesso: %s\n"), resposta);
+                        _tprintf(TEXT("\nA espera de jogo começar...\n"));
                         break;
                 }
                 case 99: {
@@ -358,7 +359,7 @@ int _tmain(int argc, LPTSTR argv[]) {
         }
 
         if (GetLastError() != ERROR_PIPE_BUSY) {
-            _tprintf_s(_T("[ERRO] - Não foi possível abrir o pipe. GLE=%d\n"), GetLastError());
+            _tprintf_s(_T("[ERRO] - Não foi possível comunicar com arbitro. GLE=%d\n"), GetLastError());
             return -1;
         }
 
