@@ -8,6 +8,14 @@
 #define MAX_VISIBLE_LETRAS 100
 
 typedef struct {
+	TCHAR username[MAX];
+	float pontuacao;
+	TCHAR* palavra;
+	BOOL ativo;
+	BOOL bot;
+} Jogador;
+
+typedef struct {
 	HANDLE hEvent;
 	HANDLE hMutex;
 	HANDLE hMapFile;
@@ -22,6 +30,7 @@ typedef struct {
 typedef struct {
 	TCHAR letras_visiveis[MAX_VISIBLE_LETRAS];
 	TCHAR palavra[100];
+	Jogador jogadores[DEFAULT_MAX_JOGADORES];
 } SHAREDMEM_LETRAS;
 
 typedef struct {
@@ -29,13 +38,7 @@ typedef struct {
 	int tipo_comando;
 } Comandos_Jogador;
 
-typedef struct {
-	TCHAR username[MAX];
-	float pontuacao;
-	TCHAR* palavra;
-	BOOL ativo;
-	BOOL bot;
-} Jogador;
+
 
 typedef struct {
 	int max_letras;

@@ -125,21 +125,32 @@ LRESULT CALLBACK trataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
         RECT rcClient;
         GetClientRect(hWnd, &rcClient);
 
+        int margemEsquerda = 10;
         int larguraRet = 390;
         int alturaRet = 90;
         int espacamento = 20;
+        int deslocamentoVertical = -50;
 
-        // Retângulo de cima
+        // RETANGULO PALAVRA
         int x1_top = (rcClient.right - larguraRet) / 2;
-        int y1_top = (rcClient.bottom / 2) - alturaRet - (espacamento / 2);
+        int y1_top = (rcClient.bottom / 2) - alturaRet - (espacamento / 2) + deslocamentoVertical;
         int x2_top = x1_top + larguraRet;
         int y2_top = y1_top + alturaRet;
 
-        // Retângulo de baixo
+        // RETANGULO LETRAS
         int x1_bottom = x1_top;
-        int y1_bottom = (rcClient.bottom / 2) + (espacamento / 2);
+        int y1_bottom = (rcClient.bottom / 2) + (espacamento / 2) + deslocamentoVertical;
         int x2_bottom = x1_bottom + larguraRet;
         int y2_bottom = y1_bottom + alturaRet;
+
+        // RETANGULO JOGADORES
+        int larguraRetJogadores = 390;
+        int alturaRetJogadores = 150;
+        int espacamentoJogadores = 20;
+        int x1_jogadores = (rcClient.right - larguraRetJogadores) / 2;
+        int y1_jogadores = y2_bottom + espacamentoJogadores;
+        int x2_jogadores = x1_jogadores + larguraRetJogadores;
+        int y2_jogadores = y1_jogadores + alturaRetJogadores;
 
         HPEN hPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 0));
         HBRUSH hBrush = (HBRUSH)GetStockObject(NULL_BRUSH);
@@ -149,21 +160,56 @@ LRESULT CALLBACK trataEventos(HWND hWnd, UINT messg, WPARAM wParam, LPARAM lPara
 
         Rectangle(hdc, x1_top, y1_top, x2_top, y2_top);
         Rectangle(hdc, x1_bottom, y1_bottom, x2_bottom, y2_bottom);
+        Rectangle(hdc, x1_jogadores, y1_jogadores, x2_jogadores, y2_jogadores);
 
         if (pSharedData) {
             SIZE sz;
 
-            // Texto no retângulo de cima (exemplo: palavra)
+            TCHAR* legenda_palavra = TEXT("Palavra Adivinhada");
+            SIZE szLegenda;
+            GetTextExtentPoint32(hdc, legenda_palavra, lstrlen(legenda_palavra), &szLegenda);
+            int legendaX_top = x1_top + (larguraRet - szLegenda.cx) / 2 + margemEsquerda;
+            int legendaY_top = y1_top - szLegenda.cy - 5 + margemEsquerda;
+            TextOut(hdc, legendaX_top, legendaY_top, legenda_palavra, lstrlen(legenda_palavra));
+           
             GetTextExtentPoint32(hdc, pSharedData->palavra, lstrlen(pSharedData->palavra), &sz);
-            int posX_top = x1_top + (larguraRet - sz.cx) / 2;
-            int posY_top = y1_top + (alturaRet - sz.cy) / 2;
+            int posX_top = x1_top + (larguraRet - sz.cx) / 2 + margemEsquerda;
+            int posY_top = y1_top + (alturaRet - sz.cy) / 2 + margemEsquerda;
             TextOut(hdc, posX_top, posY_top, pSharedData->palavra, lstrlen(pSharedData->palavra));
 
-            // Texto no retângulo de baixo (exemplo: letras_visiveis)
+            TCHAR* legenda_letras = TEXT("Letras Visíveis");
+            GetTextExtentPoint32(hdc, legenda_letras, lstrlen(legenda_letras), &szLegenda);
+            int legendaX_bottom = x1_bottom + (larguraRet - szLegenda.cx) / 2 + margemEsquerda;
+            int legendaY_bottom = y1_bottom - szLegenda.cy - 5 + margemEsquerda;
+            TextOut(hdc, legendaX_bottom, legendaY_bottom, legenda_letras, lstrlen(legenda_letras));
+
+
+            TCHAR* legenda_jogadores = TEXT("Jogadores Ativos");
+            GetTextExtentPoint32(hdc, legenda_jogadores, lstrlen(legenda_jogadores), &szLegenda);
+            int legendaX_jogadores = x1_jogadores + (larguraRetJogadores - szLegenda.cx) / 2 + margemEsquerda;
+            int legendaY_jogadores = y1_jogadores - szLegenda.cy - 5 + margemEsquerda;
+            TextOut(hdc, legendaX_jogadores, legendaY_jogadores, legenda_jogadores, lstrlen(legenda_jogadores));
+
             GetTextExtentPoint32(hdc, pSharedData->letras_visiveis, lstrlen(pSharedData->letras_visiveis), &sz);
             int posX_bottom = x1_bottom + (larguraRet - sz.cx) / 2;
             int posY_bottom = y1_bottom + (alturaRet - sz.cy) / 2;
             TextOut(hdc, posX_bottom, posY_bottom, pSharedData->letras_visiveis, lstrlen(pSharedData->letras_visiveis));
+
+
+            int offsetY = 10; 
+            TCHAR buffer[100];
+
+            for (int i = 0; i < DEFAULT_MAX_JOGADORES; i++) {
+                if (pSharedData->jogadores[i].ativo) {
+                    GetTextExtentPoint32(hdc, pSharedData->jogadores[i].username, lstrlen(pSharedData->jogadores[i].username), &sz);
+                    _stprintf_s(buffer, 100, TEXT("%s : %.2f"), pSharedData->jogadores[i].username, pSharedData->jogadores[i].pontuacao);
+                    int posX = x1_jogadores + (larguraRetJogadores - sz.cx) / 2;
+                    int posY = y1_jogadores + offsetY;
+
+                    TextOut(hdc, posX, posY, buffer, lstrlen(buffer));
+                    offsetY += sz.cy + 5;
+                }
+            }
         }
 
         DeleteObject(hPen);

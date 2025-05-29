@@ -54,6 +54,7 @@ typedef struct {
 typedef struct {
 	TCHAR letras_visiveis[MAX_VISIBLE_LETRAS];
 	TCHAR palavra[MAX_VISIBLE_LETRAS];
+	Jogador jogadores[20];
 } SHAREDMEM_LETRAS;
 
 typedef struct {

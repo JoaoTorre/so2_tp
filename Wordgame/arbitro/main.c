@@ -2,20 +2,19 @@
 #include "struct.h"
 
 
-int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
+int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador, SHAREDMEM_LETRAS *pSharedData) {
     for (int i = 0; i < threadData->nJogadores; i++) {
         if (_tcscmp(threadData->jogadores[i].username, novoJogador.username) == 0 && threadData->hPipes[i].activo == TRUE) {
             return -1;
         }
     }
-
     WaitForSingleObject(threadData->hMutex, INFINITE);
     if (threadData->nJogadores < DEFAULT_MAX_JOGADORES) {
         threadData->jogadores[threadData->JogadorIndex] = novoJogador;  
         threadData->hPipes[threadData->JogadorIndex].activo;
+        pSharedData->jogadores[threadData->JogadorIndex] = novoJogador;
     }
     ReleaseMutex(threadData->hMutex);
-    
     return TRUE;
 }
 
@@ -50,8 +49,6 @@ int VerificaNovoLider(ThreadDados* threadData) {
 
     return -1;
 }
-
-
 
 
 int BuscarNJogadoresAtivos(ThreadDados* threadData) {
@@ -281,6 +278,7 @@ VOID novaLetra(TCHAR* letrasAtuais, TCHAR alfabeto[], TCHAR vogais[], unsigned i
 }
 
 
+
 void atualizarLetrasDaMemoriaPartilhada(ThreadNewLet* data) {
     TCHAR letraVisiveis[250];
   
@@ -458,9 +456,10 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             _tprintf(TEXT("[ARBITRO] - Login recebido. Username: %s\n"), jogador.username);
             jogador.pontuacao = 0;
             params->dados->JogadorIndex = params->jogadorIndex;
-
+            int inicio_jogo = FALSE;
+         
             WaitForSingleObject(params->dados->hMutex, INFINITE);
-            if (AdicionarJogador(params->dados, jogador) == -1) {
+            if (AdicionarJogador(params->dados, jogador,params->pSharedData) == -1) {
                 _tprintf(TEXT("[ARBITRO] - Jogador já existe: %s\n"), jogador.username);
 
                 // "NACEITE"
@@ -480,11 +479,17 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                 if (BuscarNJogadoresAtivos(params->dados) >= 2) {
                     AvisarJogadores(params->dados, jogador, _T("IJOGO"), pipe);                  
                     ReleaseMutex(params->dados->hMutex);
-                    SetEvent(*(params->dados->hEventoInicio));
+                    inicio_jogo = TRUE;
                     _tprintf(TEXT("\n[ARBITRO]- Jogo iniciado\n"));
                 }
             }
             ReleaseMutex(params->dados->hMutex);
+
+            if (inicio_jogo) {
+                ResetEvent(*(params->dados->hEventoFim));
+                SetEvent(*(params->dados->hEventoInicio));
+                SetEvent(params->dados->memdata->hEvent); 
+            }
             break;
 
         case 2: // PEDIDO PONTUAÇÃO
@@ -558,15 +563,17 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
                      WriteFile(pipe,jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
                      AvisarJogadores(params->dados,jogador, _T("ACERTOU"), pipe);
                      comandos.tipo_comando = 6;
-                }
+                 }
 
                 if (resultado == 2) {
                     WriteFile(pipe, &resultado, sizeof(int), &n, NULL);
                     WriteFile(pipe, &tamanho_palavra, sizeof(DWORD), &n, NULL);
                     WriteFile(pipe, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
                 }
+                params->pSharedData->jogadores[params->jogadorIndex].pontuacao = jogador.pontuacao;
             ReleaseMutex(params->dados->hMutex);
 
+            SetEvent(params->dados->memdata->hEvent);
 
             int jogadorFrente = VerificaNovoLider(params->dados);
 
@@ -609,6 +616,10 @@ DWORD WINAPI threadInterface(LPVOID param) {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
     TCHAR cmdLine[256];
+    ZeroMemory(&si, sizeof(si));
+    si.cb = sizeof(si);
+    ZeroMemory(&pi, sizeof(pi));
+
 
     do {
         _tprintf(_T("\nInsira Comando: "));
@@ -635,12 +646,8 @@ DWORD WINAPI threadInterface(LPVOID param) {
                 }
                 else if (_tcscmp(comandoArray[0], _T("iniciarbot")) == 0 && nArgumentos == 3) {
                     
-                    ZeroMemory(&si, sizeof(si));
-                    si.cb = sizeof(si);
-                    ZeroMemory(&pi, sizeof(pi));
-                    
+                  
                     _stprintf_s(cmdLine, _countof(cmdLine), _T("bot.exe %s %s"), comandoArray[1], comandoArray[2]);
-
 
 
                     if (!CreateProcess(
@@ -692,6 +699,8 @@ DWORD WINAPI threadInterface(LPVOID param) {
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     free(comandoArray);
+    SetEvent(dados->hEvents[0]);
+    dados->terminar = TRUE;
     return 0;
 }
 
@@ -907,6 +916,7 @@ int _tmain(int argc, TCHAR* argv[]) {
          dados.JogadorIndexLider = -1;
          dados.hEventoInicio = &hEventoInicio;
          dados.hEventoFim = &hEventoFim;
+       
 
          if (ConnectNamedPipe(hPipe, &dados.hPipes[i].overlap)) {
              _tprintf(TEXT("[ERRO] Ligar ao Jogador! (ConnectNamedPipe)\n"));
@@ -933,6 +943,7 @@ int _tmain(int argc, TCHAR* argv[]) {
      threadNewLet.pSharedData = pSharedData;
      threadNewLet.hEventoInicio = &hEventoInicio;
      threadNewLet.hEventoFim = &hEventoFim;
+
 
      hThreadInterface = CreateThread(NULL, 0, threadInterface, &dados, 0, NULL);
 
@@ -962,7 +973,6 @@ int _tmain(int argc, TCHAR* argv[]) {
                  ResetEvent(dados.hEvents[i]);
                  WaitForSingleObject(dados.hMutex, INFINITE);
                  dados.hPipes[i].activo = TRUE;
-
                  ReleaseMutex(dados.hMutex);
 
                  ThreadParams* params = malloc(sizeof(ThreadParams));
