@@ -20,23 +20,36 @@ int AdicionarJogador(ThreadDados* threadData, Jogador novoJogador) {
 }
 
 int VerificaNovoLider(ThreadDados* threadData) {
-    int novoLider = 0;
-    float maiorPontuacao = threadData->jogadores[0].pontuacao;
-    int jogadorIndex = threadData->JogadorIndexLider;
+    int novoLider = -1;
+    float maiorPontuacao = -1.0f;
+    int contadorEmpate = 0;
 
-    for (int i = 1; i < threadData->nJogadores; i++) {
-        if (threadData->jogadores[i].pontuacao > maiorPontuacao && threadData->hPipes[i].activo == TRUE) {
-            maiorPontuacao = threadData->jogadores[i].pontuacao;
-            novoLider = i;
+    for (int i = 0; i < threadData->nJogadores; i++) {
+        if (threadData->hPipes[i].activo == TRUE) {
+            float pontos = threadData->jogadores[i].pontuacao;
+
+            if (pontos > maiorPontuacao) {
+                maiorPontuacao = pontos;
+                novoLider = i;
+                contadorEmpate = 1; 
+            }
+            else if (pontos == maiorPontuacao) {
+                contadorEmpate++; 
+            }
         }
     }
 
-    if (novoLider != jogadorIndex && threadData->hPipes[jogadorIndex].activo == TRUE) {
-        threadData->JogadorIndexLider = novoLider;
-        return TRUE;
+    if (contadorEmpate > 1) {
+        return -1;
     }
-    return FALSE;
+
+    if (novoLider != -1 && novoLider != threadData->JogadorIndexLider) {
+        threadData->JogadorIndexLider = novoLider;
+    }
+
+    return threadData->JogadorIndexLider;
 }
+
 
 
 
@@ -104,20 +117,14 @@ void AvisarJogadores(ThreadDados* threadData, Jogador jogador, TCHAR* tipo, HAND
 
 
              if (_tcscmp(tipo, _T("ACERTOU")) == 0) {
-                    if (threadData->hPipes[i].hInstancia != hpipe) {
-                        TCHAR msg[] = _T("ACERTOU");
-                        header.tipo = 70;
-                        header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;  
-                    }
-                    else {
-                        TCHAR msg[] = _T("ACERTOU");
-                        header.tipo = 80;
-                        header.tamanho = (DWORD)_tcslen(jogador.palavra) + 1;
-                    }
-
-                    WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
-                    WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
-                    WriteFile(threadData->hPipes[i].hInstancia, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
+                 if (threadData->hPipes[i].hInstancia != hpipe) {
+                     TCHAR msg[] = _T("ACERTOU");
+                     header.tipo = 70;
+                     header.tamanho = (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR);
+                     WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
+                     WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
+                     WriteFile(threadData->hPipes[i].hInstancia, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
+                 }
              }
 
 
@@ -136,8 +143,6 @@ void AvisarJogadores(ThreadDados* threadData, Jogador jogador, TCHAR* tipo, HAND
                 WriteFile(threadData->hPipes[i].hInstancia, &header, sizeof(header), &n, NULL);
                 WriteFile(threadData->hPipes[i].hInstancia, &jogador, sizeof(Jogador), &n, NULL);
             }
-
-
         }
 
     }
@@ -186,6 +191,7 @@ int VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION cs) 
     for (int i = 0; i < _tcslen(leitura); i++) {
         letraValida = FALSE;
         for (int j = 0; j < tamLetras; j++) {
+          
             if (leitura[i] == letrasAtuais[j]) {
                 letrasAtuais[j] = _T(' ');
                 letraValida = TRUE;
@@ -199,6 +205,7 @@ int VerificaLetras(TCHAR leitura[12], TCHAR* letrasAtuais, CRITICAL_SECTION cs) 
 
             return 0;
         }
+        _tprintf(_T("Letras VERIFICA\n"), leitura[i]);
     }
 
     LeaveCriticalSection(&cs);
@@ -213,6 +220,8 @@ int VerificaPalavra(TCHAR leitura[12], TCHAR* dicionario[]) {
 
     for (int i = 0; dicionario[i] != NULL; i++) {  
         if (_tcscmp(leitura, dicionario[i]) == 0) {
+
+            _tprintf(_T("[ARBITRO] - Palavra ACERTADA: %ls -> %ls\n"), leitura, dicionario[i]);
             return 1;  
         }
     }
@@ -289,6 +298,65 @@ void ShowActualLetters(TCHAR* letrasAtuais) {
     }
  
 }
+
+
+int VerificaPontuacao(TCHAR* leitura,Jogador *jogador,Letters* letters,ConfigJogo* config,HANDLE* hMutex,HANDLE* hEvent,SHAREDMEM_LETRAS* pSharedData,ThreadNewLet* threadNewLet) {
+    TCHAR letrasAtuaisCopyVerificacao[13];
+    size_t len = _tcslen(leitura);
+    int resultado;
+
+    if (len > 0 && leitura[len - 1] == _T('\n')) {
+        leitura[len - 1] = _T('\0');
+        len--;
+    }
+
+    if (len < 1 || len > MAXIMO_LETRAS) {
+        _tprintf_s(_T("Palavra muito longa ou vazia!\n"));
+        jogador->pontuacao -= 0.5f * len;
+        return jogador->pontuacao;
+    }
+
+    EnterCriticalSection(&letters->cs);
+    _tcsncpy_s(letrasAtuaisCopyVerificacao, _countof(letrasAtuaisCopyVerificacao), letters->letrasAtuais, _TRUNCATE);
+    LeaveCriticalSection(&letters->cs);
+    _tprintf(_T("[ARBITRO] - Palavra recebida: %ls -> %ls\n"), leitura, jogador->username);
+    if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao, letters->cs)) {
+ 
+        if (VerificaPalavra(leitura, letters->dicionario)) {
+
+            _tprintf_s(_T("Palavra correta! Pontos atribuídos: %d\n"), len);
+            _tprintf_s(_T("Letras atuais: %s\n"),letters->letrasAtuais);
+
+            jogador->pontuacao += len;
+
+            OrdenarArray(letrasAtuaisCopyVerificacao);
+
+            EnterCriticalSection(&letters->cs);
+            _tcsncpy_s(letters->letrasAtuais, config->max_letras + 1, letrasAtuaisCopyVerificacao, _TRUNCATE);
+            atualizarLetrasDaMemoriaPartilhada(threadNewLet);
+            LeaveCriticalSection(&letters->cs);
+
+            WaitForSingleObject(hMutex, INFINITE);
+            _tcscpy_s(pSharedData->palavra, MAX_VISIBLE_LETRAS, leitura);
+            ReleaseMutex(hMutex);
+            SetEvent(hEvent);
+            resultado = 1;
+        }
+        else {
+            _tprintf_s(_T("Palavra não encontrada!\n"));
+            jogador->pontuacao -= 0.5f * len;
+            resultado = 2;
+        }
+    }
+    else {
+        _tprintf_s(_T("Letras erradas! Tente novamente.\n"));
+        jogador->pontuacao -= 0.5f * len;
+        resultado = 2;
+    }
+
+    return resultado;
+}
+
 
 DWORD WINAPI ThreadNewLetter(LPVOID param) {
 	ThreadNewLet* data = (ThreadNewLet*)param;
@@ -467,86 +535,52 @@ DWORD WINAPI threadTrataCliente(LPVOID param) {
             DisconnectNamedPipe(pipe);
             continua = FALSE;
             break;
-        case 5: //RECEBE PALAVRA
-            header.tipo = 4;
-            header.tamanho = sizeof(_T("PRECEBIDA"));
+        case 5: //RECEBE PALAVRA 
+            header.tipo = 2;
+            header.tamanho = sizeof(float);
+            int resultado = 0;
+            DWORD tamanho_palavra;
             WriteFile(pipe, &header, sizeof(header), &n, NULL);
+     
+            WaitForSingleObject(params->dados->hMutex, INFINITE);
+                Jogador* jogadorAtual = &params->dados->jogadores[params->jogadorIndex];
+                resultado =VerificaPontuacao(comandos.comando,jogadorAtual,params->letters,params->dados->config,params->dados->memdata->hMutex,params->dados->memdata->hEvent,params->pSharedData,params->threadNewLet);
+                jogador.palavra = (TCHAR*)malloc((_tcslen(comandos.comando) + 1) * sizeof(TCHAR));
+                jogador.pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
+                tamanho_palavra = (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR);
+                _tcscpy_s(jogador.palavra, _tcslen(comandos.comando) + 1, comandos.comando);
 
-            _tprintf(_T("[ARBITRO] - Palavra recebida: %ls -> %ls\n"), comandos.comando, params->dados->jogadores[params->jogadorIndex].username);
-            _tcslwr_s(comandos.comando, sizeof(comandos.comando) / sizeof(TCHAR));
+                if (resultado == 1) {
+                     WriteFile(pipe,&resultado, sizeof(int), &n, NULL);
+                     WriteFile(pipe, &params->dados->jogadores[params->jogadorIndex].pontuacao, sizeof(float), &n, NULL);
+                     WriteFile(pipe,&tamanho_palavra,sizeof(DWORD), &n, NULL);
+                     WriteFile(pipe,jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
+                     AvisarJogadores(params->dados,jogador, _T("ACERTOU"), pipe);
+                     comandos.tipo_comando = 6;
+                }
 
-            // fazer verificação da palavra
-            TCHAR* leitura = &comandos.comando; // perigo corrigir
+                if (resultado == 2) {
+                    WriteFile(pipe, &resultado, sizeof(int), &n, NULL);
+                    WriteFile(pipe, &tamanho_palavra, sizeof(DWORD), &n, NULL);
+                    WriteFile(pipe, jogador.palavra, (_tcslen(jogador.palavra) + 1) * sizeof(TCHAR), &n, NULL);
+                }
+            ReleaseMutex(params->dados->hMutex);
 
-            size_t len = _tcslen(leitura);
-            if (len > 0 && leitura[len - 1] == _T('\n')) {
-                leitura[len - 1] = _T('\0');
-                len--;
+
+            int jogadorFrente = VerificaNovoLider(params->dados);
+
+            // ESTÁ A FRENTE
+            if (jogadorFrente == params->jogadorIndex) {
+                AvisarJogadores(params->dados,jogador, _T("AFRENTE"), pipe);
             }
-
-            if (1 > len && len > MAXIMO_LETRAS) { // corrigir
-                _tprintf_s(_T("Palavra muito longa!\n"));
-                params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
+            else if (jogadorFrente == -1) {
+               // EMPATE COM ALGUM JOGADOR
             }
+            // OUTRO JOGADOR PASSOU A SER LIDER
             else {
-                TCHAR letrasAtuaisCopyVerificacao[13];
-                TCHAR letrasAtuaisCopyNewLetter[13];
-
-                // Cria uma copia do array de letras disponiveis
-                EnterCriticalSection(&params->letters->cs);
-                _tcsncpy_s(letrasAtuaisCopyVerificacao, sizeof(letrasAtuaisCopyVerificacao) / sizeof(letrasAtuaisCopyVerificacao[0]), params->letters->letrasAtuais, _tcslen(params->letters->letrasAtuais));
-                LeaveCriticalSection(&params->letters->cs);
-                if (VerificaLetras(leitura, letrasAtuaisCopyVerificacao, params->letters->cs)) {
-                    if (VerificaPalavra(leitura, params->letters->dicionario)) {
-                        // dar os pontos ao jogador e atualizar letras disponiveis
-                       
-						_tprintf_s(_T("Palavra correta! Pontos atribuídos: %d\n"), len);
-						_tprintf_s(_T("Letras atuais: %s\n"), params->letters->letrasAtuais);
-
-                        OrdenarArray(letrasAtuaisCopyVerificacao);
-                        _tcsncpy_s(params->letters->letrasAtuais, params->dados->config->max_letras + 1, letrasAtuaisCopyVerificacao, params->dados->config->max_letras + 1);
-                        params->dados->jogadores[params->jogadorIndex].pontuacao += len;
-                        
-                        jogador.palavra = (TCHAR*)malloc((_tcslen(leitura) + 1) * sizeof(TCHAR));
-
-                        jogador.pontuacao = params->dados->jogadores[params->jogadorIndex].pontuacao;
-
-                        _tcscpy_s(jogador.palavra, _tcslen(leitura) + 1, leitura);
-
-                        EnterCriticalSection(&params->letters->cs);
-                        atualizarLetrasDaMemoriaPartilhada(params->threadNewLet);
-                        LeaveCriticalSection(&params->letters->cs);
-                   
-
-                        //AvisarJogadores(params->dados, jogador, _T("ACERTOU"), pipe);
-                        if (VerificaNovoLider(params->dados)) {
-                            AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
-                        }
-
-                         WaitForSingleObject(params->dados->memdata->hMutex, INFINITE);  
-                         _tcscpy_s(params->pSharedData->palavra,MAX_VISIBLE_LETRAS,leitura);
-                         ReleaseMutex(params->dados->memdata->hMutex);
-                         SetEvent(params->dados->memdata->hEvent);
-                    }
-                    else {
-                        // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
-                        _tprintf_s(_T("Palavra não encontrada!\n"));
-                        params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
-                        if (VerificaNovoLider(params->dados)) {
-                            AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
-                        }
-                    }
-                    
-                }
-                else {
-                    // retira os pontos ao jogador e não atualiza letras disponiveis porque nao foi correta a palavra
-                    _tprintf_s(_T("Letras erradas! Tente novamente.\n"));
-                    params->dados->jogadores[params->jogadorIndex].pontuacao -= 0.5 * len;
-                    if (VerificaNovoLider(params->dados)) {
-                        AvisarJogadores(params->dados, jogador, _T("AFRENTE"), pipe);
-                    }
-                }
+                AvisarJogadores(params->dados,params->dados->jogadores[jogadorFrente], _T("AFRENTE"), params->dados->hPipes[jogadorFrente].hInstancia);
             }
+
             break;
 
         case 6:

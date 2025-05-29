@@ -84,8 +84,12 @@ int verifica_comandos(DadosPartilhados* dadosPartilhados) {
         _tprintf(_T("Comando inválido: %s\n"), comando);
         return TRUE; 
     }
-    else if (_tcslen(comando) > 0) { // alterar depois
+    else if (_tcslen(comando) > 0) { 
         if (dadosPartilhados->jogoIniciado == TRUE) {
+            float pont;
+            DWORD tamanho_palavra;
+            int resultado;
+
             ResetEvent(dadosPartilhados->hEventoAvancar);
             SetEvent(dadosPartilhados->hEventoParar);
             WaitForSingleObject(hMutex, INFINITE);
@@ -94,6 +98,35 @@ int verifica_comandos(DadosPartilhados* dadosPartilhados) {
             ReleaseMutex(hMutex);
             WriteFile(*hPipe, comandos_jogador, sizeof(Comandos_Jogador), &n, NULL);
             _tprintf(TEXT("Palavra Enviada : %s\n"), comando);
+         
+            BOOL ret = ReadFile(*hPipe, &resultado, sizeof(int), &n, NULL);
+            if (ret && n == sizeof(int)) {    
+                if (resultado == 1) {
+                    BOOL ret2 = ReadFile(*hPipe, &pont, sizeof(float), &n, NULL);
+                    if (ret2 && n == sizeof(float)) {
+                        WaitForSingleObject(dadosPartilhados->hMutex, INFINITE);
+                        dadosPartilhados->pontuacao = pont;
+                        ReleaseMutex(dadosPartilhados->hMutex);
+                        _tprintf(TEXT("\nPontuação atual: %.2f\n"), dadosPartilhados->pontuacao);
+                    }
+
+                    BOOL ret3 = ReadFile(*hPipe, &tamanho_palavra, sizeof(DWORD), &n, NULL);
+                    if (ret3 && n == sizeof(DWORD)) {
+                        dadosPartilhados->jogador->palavra = malloc(tamanho_palavra * sizeof(TCHAR));
+                        ReadFile(*hPipe, dadosPartilhados->jogador->palavra, tamanho_palavra * sizeof(TCHAR), &n, NULL);
+                        _tprintf(TEXT("\nParabéns acertaste a palavra %s!\n"), dadosPartilhados->jogador->palavra);
+                    }
+
+                }else if (resultado == 2) {
+                    BOOL ret3 = ReadFile(*hPipe, &tamanho_palavra, sizeof(DWORD), &n, NULL);
+                    if (ret3 && n == sizeof(DWORD)) {
+                        dadosPartilhados->jogador->palavra = malloc(tamanho_palavra * sizeof(TCHAR));
+                        ReadFile(*hPipe, dadosPartilhados->jogador->palavra, tamanho_palavra * sizeof(TCHAR), &n, NULL);
+                        _tprintf(TEXT("\nPalavra não encontrada: %s!\n"), dadosPartilhados->jogador->palavra);
+                    }
+                }
+            }
+
             ResetEvent(dadosPartilhados->hEventoParar);
             SetEvent(dadosPartilhados->hEventoAvancar);
             return TRUE;
@@ -200,20 +233,11 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                     break;
                 }
 
-
                 case 70: {
                     ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
                     dados->dadosPartilhados->jogador->palavra = malloc(dados->header->tamanho * sizeof(TCHAR));
                     ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador->palavra, dados->header->tamanho * sizeof(TCHAR), &n, NULL);
                     _tprintf(TEXT("\nO jogador %s acertou a palavra %s\n"), dados->dadosPartilhados->jogador->username, dados->dadosPartilhados->jogador->palavra);
-                    break;
-                }
-
-                case 80: {
-                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador, sizeof(Jogador), &n, NULL);
-                    dados->dadosPartilhados->jogador->palavra = malloc(dados->header->tamanho * sizeof(TCHAR));
-                    ReadFile(*dados->dadosPartilhados->hPipe, dados->dadosPartilhados->jogador->palavra, dados->header->tamanho * sizeof(TCHAR), &n, NULL);
-                    _tprintf(TEXT("\nParabéns acertaste a palavra %s!\n"),dados->dadosPartilhados->jogador->palavra);
                     break;
                 }
 
@@ -228,8 +252,7 @@ DWORD WINAPI threadArbitro(LPVOID param) {
                     _tprintf(TEXT("\nParabéns estás em primeiro lugar!\n"));
                     break;
                 }
-
-                }
+             }
               
             }
         }

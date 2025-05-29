@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <Windows.h>
 
-
+#define MAX_VISIBLE_LETRAS 13
 #define MAX 255
 
 typedef struct {
