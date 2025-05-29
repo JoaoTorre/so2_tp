@@ -81,11 +81,9 @@ DWORD WINAPI ThreadEscuta(LPVOID param) {
 				DWORD error = GetLastError();
 				switch (error) {
 				case ERROR_BROKEN_PIPE:
-					_tprintf(TEXT("[JOGOUI] - O jogo foi encerrado"));
 					*dados->Continua = FALSE;
 					break;
 				case ERROR_PIPE_NOT_CONNECTED:
-					_tprintf(TEXT("[JOGOUI] - O jogo foi encerrado\n"));
 					*dados->Continua = FALSE;
 					break;
 				default:
@@ -99,13 +97,11 @@ DWORD WINAPI ThreadEscuta(LPVOID param) {
 					case 98: {
 						ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
 						resposta[n / sizeof(TCHAR)] = _T('\0');
-						_tprintf(TEXT("\nSessão iniciada com sucesso: %s\n"), resposta);
 						break;
 					}
 					case 99: {
 						ReadFile(*dados->dadosPartilhados->hPipe, resposta, dados->header->tamanho, &n, NULL);
 						resposta[n / sizeof(TCHAR)] = _T('\0');
-						_tprintf(TEXT("\nJogador não aceite: %s\n"), resposta);
 						*dados->Continua = FALSE;
 						break;
 					}
@@ -173,18 +169,15 @@ int _tmain(int argc, LPTSTR argv[]){
 	_setmode(_fileno(stderr), _O_WTEXT);
 #endif
 
-	/*if (argc != 3) {
+	if (argc != 3) {
 		_tprintf(_T("[ERRO <BOT> ] - Número de argumentos não válido ./bot.exe <username> <tempo>\n"));
 		return -1;
 	}
 	
 	wcscpy_s(jogador.username, _countof(jogador.username), argv[1]);
 	wait_time = _tstoi(argv[2]);
-
-	*/
-
-	wcscpy_s(jogador.username, _countof(jogador.username), _T("olasydbsa"));
-	wait_time = 3;
+	//wcscpy_s(jogador.username, _countof(jogador.username), _T("olasydbsa"));
+	//wait_time = 3;
 	jogador.bot = TRUE;
 
 	if (wait_time < 1) {
@@ -376,9 +369,6 @@ int _tmain(int argc, LPTSTR argv[]){
 			ReleaseMutex(hMutex);
 			ResetEvent(dadosPartilhados.hEventoParar);
 			SetEvent(dadosPartilhados.hEventoAvancar);
-		}
-		else {
-			_tprintf(_T(" [BOT] - Nenhuma palavra pôde ser formada.\n"));
 		}
 		
 	} while (continua);
